@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>v1.4.2 | mysites - visual vault</title>
+    <title>v1.5.0 | mysites - visual vault</title>
     
     <script src="https://www.gstatic.com/firebasejs/10.12.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.1/firebase-auth-compat.js"></script>
@@ -64,7 +64,6 @@
 
         #main-content { flex-grow: 1; padding: 40px; overflow-y: auto; }
 
-        /* RESTORED: Featured Portal Style */
         #featured-portal {
             height: 320px;
             background: linear-gradient(rgba(30, 41, 59, 0.7), rgba(15, 23, 42, 0.9)), 
@@ -110,10 +109,10 @@
             align-items: center;
             justify-content: center;
             color: var(--accent);
-            font-size: 2rem;
+            font-size: 2.5rem;
             font-weight: 800;
             background-size: cover;
-            background-position: center;
+            background-position: top center;
         }
 
         .card-content { padding: 16px; }
@@ -236,7 +235,7 @@
             if (!value || !gKey) return;
 
             statusMsg.innerText = "Gemini researching...";
-            const promptStr = `Research "${value}". Return ONLY JSON: {"official_name": "string", "primary_url": "string", "short_description": "max 20 words", "representative_image_url": "URL to high-res logo"}`;
+            const promptStr = `Research "${value}". Return ONLY JSON: {"official_name": "string", "primary_url": "string", "short_description": "max 20 words"}`;
 
             try {
                 const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${gKey}`, {
@@ -249,11 +248,8 @@
                 const jsonMatch = rawText.match(/\{[\s\S]*\}/);
                 const cleanJson = JSON.parse(jsonMatch[0]);
 
-                let storageUrl = null;
-                if (cleanJson.representative_image_url) {
-                    statusMsg.innerText = "Saving brand asset...";
-                    storageUrl = await uploadToVault(cleanJson.representative_image_url, cleanJson.official_name);
-                }
+                statusMsg.innerText = "Capturing visual snapshot...";
+                const storageUrl = await captureAndStore(cleanJson.primary_url, cleanJson.official_name);
 
                 await db.collection("sites").add({
                     ...cleanJson,
@@ -271,17 +267,33 @@
             }
         }
 
-        async function uploadToVault(url, name) {
+        async function captureAndStore(url, name) {
             try {
-                const proxiedUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`;
-                const response = await fetch(proxiedUrl);
+                // Waterfall 1: Live Screenshot via Microlink
+                const screenshotUrl = `https://api.microlink.io/?url=${encodeURIComponent(url)}&screenshot=true&embed=screenshot.url`;
+                const response = await fetch(screenshotUrl);
                 const blob = await response.blob();
+                
+                // Save to Firebase Storage
                 const fileName = `thumbnails/${currentUser.uid}/${Date.now()}.png`;
                 const storageRef = storage.ref().child(fileName);
                 await storageRef.put(blob);
                 return await storageRef.getDownloadURL();
             } catch (e) {
-                return null;
+                console.warn("Screenshot failed, trying logo fallback...");
+                try {
+                    // Waterfall 2: Logo Fallback via Clearbit
+                    const domain = new URL(url).hostname;
+                    const logoUrl = `https://logo.clearbit.com/${domain}`;
+                    const response = await fetch(logoUrl);
+                    const blob = await response.blob();
+                    const fileName = `thumbnails/${currentUser.uid}/${Date.now()}_logo.png`;
+                    const storageRef = storage.ref().child(fileName);
+                    await storageRef.put(blob);
+                    return await storageRef.getDownloadURL();
+                } catch (e2) {
+                    return null; // Both failed
+                }
             }
         }
 
