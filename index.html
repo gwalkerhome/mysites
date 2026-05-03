@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>v1.5.0 | mysites - visual vault</title>
+    <title>v1.5.1 | mysites - visual vault</title>
     
     <script src="https://www.gstatic.com/firebasejs/10.12.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.1/firebase-auth-compat.js"></script>
@@ -16,6 +16,7 @@
             --sidebar-bg: #020617;
             --card-bg: #1e293b;
             --accent: #38bdf8;
+            --danger: #f87171;
             --text: #f8fafc;
             --text-dim: #94a3b8;
             --border: #334155;
@@ -99,8 +100,11 @@
             border: 1px solid var(--border);
             border-radius: 16px;
             overflow: hidden;
+            position: relative;
             transition: transform 0.2s;
         }
+
+        .site-card:hover .delete-btn { opacity: 1; }
 
         .card-thumb {
             height: 160px;
@@ -118,6 +122,27 @@
         .card-content { padding: 16px; }
         .card-title { font-weight: 700; margin-bottom: 4px; color: var(--text); display: block; text-decoration: none; }
         .card-desc { font-size: 0.85rem; color: var(--text-dim); line-height: 1.4; }
+
+        .delete-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            width: 28px;
+            height: 28px;
+            background: rgba(0,0,0,0.6);
+            color: var(--text);
+            border: none;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transition: all 0.2s;
+            font-size: 1.2rem;
+            line-height: 0;
+        }
+        .delete-btn:hover { background: var(--danger); color: white; }
     </style>
 </head>
 <body>
@@ -198,12 +223,14 @@
             grid.innerHTML = '';
             snapshot.forEach(doc => {
                 const site = doc.data();
+                const siteId = doc.id;
                 const card = document.createElement('div');
                 card.className = 'site-card';
                 
                 let thumbStyle = site.storage_url ? `background-image: url('${site.storage_url}');` : `background: linear-gradient(45deg, #0f172a, #1e293b);`;
 
                 card.innerHTML = `
+                    <button class="delete-btn" onclick="deleteSite('${siteId}', '${site.storage_url}')">&times;</button>
                     <div class="card-thumb" style="${thumbStyle}">${site.storage_url ? '' : (site.official_name || '?').charAt(0)}</div>
                     <div class="card-content">
                         <a href="${site.primary_url}" target="_blank" class="card-title">${site.official_name}</a>
@@ -212,6 +239,17 @@
                 `;
                 grid.appendChild(card);
             });
+        }
+
+        async function deleteSite(id, storageUrl) {
+            if (!confirm("Are you sure you want to delete this site from your vault?")) return;
+            try {
+                await db.collection("sites").doc(id).delete();
+                if (storageUrl) {
+                    const storageRef = firebase.storage().refFromURL(storageUrl);
+                    await storageRef.delete();
+                }
+            } catch (e) { console.error("Delete failed:", e); }
         }
 
         function startVaultListener(uid) {
@@ -269,20 +307,15 @@
 
         async function captureAndStore(url, name) {
             try {
-                // Waterfall 1: Live Screenshot via Microlink
                 const screenshotUrl = `https://api.microlink.io/?url=${encodeURIComponent(url)}&screenshot=true&embed=screenshot.url`;
                 const response = await fetch(screenshotUrl);
                 const blob = await response.blob();
-                
-                // Save to Firebase Storage
                 const fileName = `thumbnails/${currentUser.uid}/${Date.now()}.png`;
                 const storageRef = storage.ref().child(fileName);
                 await storageRef.put(blob);
                 return await storageRef.getDownloadURL();
             } catch (e) {
-                console.warn("Screenshot failed, trying logo fallback...");
                 try {
-                    // Waterfall 2: Logo Fallback via Clearbit
                     const domain = new URL(url).hostname;
                     const logoUrl = `https://logo.clearbit.com/${domain}`;
                     const response = await fetch(logoUrl);
@@ -292,7 +325,7 @@
                     await storageRef.put(blob);
                     return await storageRef.getDownloadURL();
                 } catch (e2) {
-                    return null; // Both failed
+                    return null;
                 }
             }
         }
