@@ -3,16 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>v1.0.0 | mysites - api settings</title>
+    <title>v1.0.0 | mysites - api test center</title>
     <style>
         :root {
             --bg-color: #0f172a;
+            --sidebar-bg: #020617;
             --card-bg: #1e293b;
-            --accent: #38bdf8;
+            --accent-gemini: #38bdf8;
+            --accent-openai: #10a37f;
             --text: #f8fafc;
             --text-dim: #94a3b8;
             --border: #334155;
-            --success: #22c55e;
         }
 
         body {
@@ -22,13 +23,15 @@
             color: var(--text);
             display: flex;
             height: 100vh;
+            overflow: hidden;
         }
 
         #sidebar {
             width: 260px;
-            background: #020617;
+            background: var(--sidebar-bg);
             padding: 24px;
             border-right: 1px solid var(--border);
+            flex-shrink: 0;
         }
 
         .btn-stage-1 {
@@ -44,171 +47,184 @@
             transition: all 0.2s;
         }
 
-        .btn-stage-1:hover {
-            background: var(--accent);
-            color: #000;
-        }
+        .btn-stage-1:hover { opacity: 0.8; transform: translateX(4px); }
 
-        #main-content {
+        #test-container {
             flex-grow: 1;
-            padding: 40px;
-            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
         }
 
-        .settings-container {
-            max-width: 800px;
+        /* Header Input Bar */
+        #top-bar {
+            padding: 20px 40px;
+            background: var(--sidebar-bg);
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            gap: 20px;
+            align-items: center;
         }
 
-        .card {
-            background: var(--card-bg);
-            padding: 24px;
-            border-radius: 16px;
-            border: 1px solid var(--border);
-            margin-bottom: 24px;
-        }
-
-        .form-group { margin-bottom: 20px; }
-
-        label {
-            display: block;
-            margin-bottom: 8px;
-            color: var(--accent);
-            font-size: 0.9rem;
-            font-weight: bold;
-        }
-
-        input, select {
-            width: 100%;
+        #test-input {
+            flex-grow: 1;
             padding: 12px;
-            background: #020617;
+            background: var(--bg-color);
             border: 1px solid var(--border);
             color: white;
             border-radius: 8px;
-            box-sizing: border-box;
         }
 
-        /* Model List Table */
-        .model-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 20px;
-            font-size: 0.85rem;
+        /* Split View */
+        #split-view {
+            display: flex;
+            flex-grow: 1;
+            overflow: hidden;
         }
 
-        .model-table th {
-            text-align: left;
-            color: var(--accent);
-            padding: 12px;
-            border-bottom: 1px solid var(--border);
+        .test-panel {
+            flex: 1;
+            padding: 30px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            overflow-y: auto;
         }
 
-        .model-table td {
-            padding: 12px;
-            border-bottom: 1px solid var(--border);
-            color: var(--text-dim);
+        .gemini-side { border-right: 1px solid var(--border); }
+        
+        .panel-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-bottom: 10px;
+            border-bottom: 2px solid var(--border);
         }
 
-        .status-badge {
-            padding: 2px 8px;
-            border-radius: 4px;
-            font-size: 0.7rem;
-            background: var(--border);
-            color: var(--text);
+        .panel-header.gemini { border-color: var(--accent-gemini); color: var(--accent-gemini); }
+        .panel-header.openai { border-color: var(--accent-openai); color: var(--accent-openai); }
+
+        .output-box {
+            background: #020617;
+            padding: 20px;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            min-height: 200px;
+            white-space: pre-wrap;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9rem;
+            line-height: 1.5;
         }
+
+        .status { font-size: 0.8rem; color: var(--text-dim); }
     </style>
 </head>
 <body>
 
     <nav id="sidebar">
-        <h2 style="color: var(--accent);">mysites</h2>
+        <h2 style="color: var(--accent-gemini);">mysites</h2>
         <button class="btn-stage-1" onclick="location.href='index.html'">Dashboard</button>
-        <button class="btn-stage-1" onclick="location.href='settings.html'">Back to Settings</button>
+        <button class="btn-stage-1" onclick="location.href='settings.html'">Settings</button>
     </nav>
 
-    <main id="main-content">
-        <h1>API Intelligence Center</h1>
-        <p style="color: var(--text-dim);">Configure your AI models and verify connectivity.</p>
+    <div id="test-container">
+        <div id="top-bar">
+            <input type="text" id="test-input" placeholder="Enter a site name (e.g. 'Canva') or URL...">
+            <button class="btn-stage-1" style="width: auto; background: var(--accent-gemini); color: black;" onclick="runDualTest()">Run Dual Test</button>
+        </div>
 
-        <div class="settings-container">
-            <div class="card">
-                <h3>Credentials</h3>
-                <div class="form-group">
-                    <label>Gemini API Key</label>
-                    <input type="password" id="gemini-key" placeholder="Paste your Google AI Key...">
+        <div id="split-view">
+            <div class="test-panel gemini-side">
+                <div class="panel-header gemini">
+                    <h3>Gemini 3 Flash</h3>
+                    <span id="gemini-status" class="status">Idle</span>
                 </div>
-                <button class="btn-stage-1" style="background: var(--success); border: none; color: white; width: auto;" onclick="saveKeys()">Save & Verify</button>
+                <div id="gemini-output" class="output-box">Waiting for input...</div>
             </div>
 
-            <div class="card">
-                <div style="display: flex; justify-content: space-between; align-items: center;">
-                    <h3>Available Gemini Models</h3>
-                    <button class="btn-stage-1" style="width: auto; margin: 0; font-size: 0.8rem;" onclick="fetchModels()">Refresh Model List</button>
+            <div class="test-panel">
+                <div class="panel-header openai">
+                    <h3>OpenAI GPT-4o</h3>
+                    <span id="openai-status" class="status">Idle</span>
                 </div>
-                <div id="model-list-container">
-                    <p style="color: var(--text-dim);">Save a key and click refresh to see available models.</p>
-                </div>
+                <div id="openai-output" class="output-box">Waiting for input...</div>
             </div>
         </div>
-    </main>
+    </div>
 
     <script>
-        window.onload = () => {
-            document.getElementById('gemini-key').value = localStorage.getItem('gemini_key') || '';
-            if(localStorage.getItem('gemini_key')) fetchModels();
-        };
+        async function runDualTest() {
+            const input = document.getElementById('test-input').value;
+            if (!input) return alert("Please enter a site name or link.");
 
-        function saveKeys() {
-            const key = document.getElementById('gemini-key').value;
-            localStorage.setItem('gemini_key', key);
-            alert("Key saved locally.");
-            fetchModels();
+            const prompt = `Research the following website or name: "${input}". 
+            Return a JSON object with: 
+            1. official_name
+            2. primary_url
+            3. short_description (max 20 words)
+            4. requires_login (true/false)
+            5. is_subscription (true/false)
+            6. thumbnail_prompt (a visual description for an image generator)`;
+
+            // Clear previous outputs
+            document.getElementById('gemini-output').innerText = "Analyzing...";
+            document.getElementById('openai-output').innerText = "Analyzing...";
+
+            // Execute Gemini
+            callGemini(prompt);
+            
+            // Execute OpenAI
+            callOpenAI(prompt);
         }
 
-        async function fetchModels() {
+        async function callGemini(prompt) {
             const key = localStorage.getItem('gemini_key');
-            const container = document.getElementById('model-list-container');
-            
-            if (!key) {
-                container.innerHTML = `<p style="color: #ef4444;">Please provide an API key first.</p>`;
-                return;
-            }
+            const status = document.getElementById('gemini-status');
+            const output = document.getElementById('gemini-output');
 
-            container.innerHTML = `<p>Fetching live model data...</p>`;
+            if (!key) { output.innerText = "Error: No Gemini Key found in settings."; return; }
+            status.innerText = "Processing...";
 
             try {
-                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${key}`);
-                const data = await response.json();
-
-                if (data.error) throw new Error(data.error.message);
-
-                let html = `
-                    <table class="model-table">
-                        <thead>
-                            <tr>
-                                <th>Display Name</th>
-                                <th>Model ID</th>
-                                <th>Input Limit</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                `;
-
-                data.models.forEach(m => {
-                    const shortId = m.name.replace('models/', '');
-                    html += `
-                        <tr>
-                            <td style="color: white; font-weight: bold;">${m.displayName}</td>
-                            <td><code>${shortId}</code></td>
-                            <td>${(m.inputTokenLimit / 1000).toLocaleString()}k</td>
-                        </tr>
-                    `;
+                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${key}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
                 });
-
-                html += `</tbody></table>`;
-                container.innerHTML = html;
-
+                const data = await response.json();
+                output.innerText = data.candidates[0].content.parts[0].text;
+                status.innerText = "Complete";
             } catch (err) {
-                container.innerHTML = `<p style="color: #ef4444;">Error: ${err.message}</p>`;
+                output.innerText = "Error: " + err.message;
+                status.innerText = "Failed";
+            }
+        }
+
+        async function callOpenAI(prompt) {
+            const key = localStorage.getItem('openai_key');
+            const status = document.getElementById('openai-status');
+            const output = document.getElementById('openai-output');
+
+            if (!key) { output.innerText = "Error: No OpenAI Key found in settings."; return; }
+            status.innerText = "Processing...";
+
+            try {
+                const response = await fetch('https://api.openai.com/v1/chat/completions', {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${key}`
+                    },
+                    body: JSON.stringify({
+                        model: "gpt-4o",
+                        messages: [{ role: "user", content: prompt }]
+                    })
+                });
+                const data = await response.json();
+                output.innerText = data.choices[0].message.content;
+                status.innerText = "Complete";
+            } catch (err) {
+                output.innerText = "Error: " + err.message;
+                status.innerText = "Failed";
             }
         }
     </script>
