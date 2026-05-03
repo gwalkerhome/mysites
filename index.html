@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>v1.4.0 | mysites - visual vault</title>
+    <title>v1.4.1 | mysites - visual vault</title>
     
     <script src="https://www.gstatic.com/firebasejs/10.12.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.1/firebase-auth-compat.js"></script>
@@ -107,7 +107,6 @@
         .card-content { padding: 16px; }
         .card-title { font-weight: 700; margin-bottom: 4px; color: var(--text); display: block; text-decoration: none; }
         .card-desc { font-size: 0.85rem; color: var(--text-dim); line-height: 1.4; }
-        .badge { font-size: 0.7rem; padding: 4px 8px; border-radius: 4px; background: #020617; border: 1px solid var(--border); color: var(--text-dim); margin-right: 5px; }
     </style>
 </head>
 <body>
@@ -130,7 +129,7 @@
             <div class="drop-zone">
                 <h2>Add to Vault</h2>
                 <div class="input-wrapper">
-                    <input type="text" id="site-input" placeholder="Enter web address or name...">
+                    <input type="text" id="site-input" placeholder="Enter site name or URL...">
                     <button class="btn-stage-1" style="background: var(--accent); color: #000;" onclick="handleInput()">Add Site</button>
                 </div>
                 <div id="status-msg"></div>
@@ -178,30 +177,39 @@
             }
         });
 
-        function startVaultListener(uid) {
-            unsubscribe = db.collection("sites").where("uid", "==", uid).orderBy("timestamp", "desc").onSnapshot(snapshot => {
-                const grid = document.getElementById('vault-grid');
-                grid.innerHTML = '';
-                snapshot.forEach(async doc => {
-                    const site = doc.data();
-                    const card = document.createElement('div');
-                    card.className = 'site-card';
-                    
-                    let thumbStyle = `background: linear-gradient(45deg, #0f172a, #1e293b);`;
-                    if (site.storage_url) {
-                        thumbStyle = `background-image: url('${site.storage_url}');`;
-                    }
+        function renderSites(snapshot) {
+            const grid = document.getElementById('vault-grid');
+            grid.innerHTML = '';
+            snapshot.forEach(doc => {
+                const site = doc.data();
+                const card = document.createElement('div');
+                card.className = 'site-card';
+                
+                let thumbStyle = site.storage_url ? `background-image: url('${site.storage_url}');` : `background: linear-gradient(45deg, #0f172a, #1e293b);`;
 
-                    card.innerHTML = `
-                        <div class="card-thumb" style="${thumbStyle}">${site.storage_url ? '' : site.official_name.charAt(0)}</div>
-                        <div class="card-content">
-                            <a href="${site.primary_url}" target="_blank" class="card-title">${site.official_name}</a>
-                            <div class="card-desc">${site.short_description}</div>
-                        </div>
-                    `;
-                    grid.appendChild(card);
-                });
+                card.innerHTML = `
+                    <div class="card-thumb" style="${thumbStyle}">${site.storage_url ? '' : (site.official_name || '?').charAt(0)}</div>
+                    <div class="card-content">
+                        <a href="${site.primary_url}" target="_blank" class="card-title">${site.official_name}</a>
+                        <div class="card-desc">${site.short_description}</div>
+                    </div>
+                `;
+                grid.appendChild(card);
             });
+        }
+
+        function startVaultListener(uid) {
+            // Primary sorted query
+            const sitesRef = db.collection("sites").where("uid", "==", uid);
+            
+            unsubscribe = sitesRef.orderBy("timestamp", "desc").onSnapshot(
+                snapshot => renderSites(snapshot),
+                error => {
+                    console.warn("Sorting failed (likely missing index). Falling back to unsorted list.");
+                    // Fallback to unsorted if index isn't built yet
+                    sitesRef.onSnapshot(renderSites);
+                }
+            );
         }
 
         async function handleInput() {
@@ -213,9 +221,9 @@
             
             if (!value || !gKey) return;
 
-            statusMsg.innerText = "Gemini researching & finding assets...";
+            statusMsg.innerText = "Gemini researching...";
             
-            const promptStr = `Research "${value}". Return ONLY JSON: {"official_name": "string", "primary_url": "string", "short_description": "max 20 words", "requires_login": boolean, "is_subscription": boolean, "representative_image_url": "URL to high-res logo or OG image"}`;
+            const promptStr = `Research "${value}". Return ONLY JSON: {"official_name": "string", "primary_url": "string", "short_description": "max 20 words", "representative_image_url": "URL to high-res logo or OG image"}`;
 
             try {
                 const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${gKey}`, {
@@ -230,11 +238,11 @@
 
                 let storageUrl = null;
                 if (cleanJson.representative_image_url) {
-                    statusMsg.innerText = "Securing image to your vault storage...";
+                    statusMsg.innerText = "Attempting to secure brand asset...";
                     storageUrl = await uploadToVault(cleanJson.representative_image_url, cleanJson.official_name);
                 }
 
-                statusMsg.innerText = "Saving to database...";
+                statusMsg.innerText = "Finalizing...";
                 await db.collection("sites").add({
                     ...cleanJson,
                     uid: currentUser.uid,
@@ -246,21 +254,25 @@
                 inputField.value = '';
                 setTimeout(() => statusMsg.innerText = "", 3000);
             } catch (e) { 
-                console.error(e);
+                console.error("Vault Error:", e);
                 statusMsg.innerText = "Error: " + e.message; 
             }
         }
 
         async function uploadToVault(url, name) {
             try {
-                const response = await fetch(url);
+                // Try to use a CORS proxy to bypass security blocks on site assets
+                const proxiedUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`;
+                const response = await fetch(proxiedUrl);
+                if (!response.ok) throw new Error("Proxy fetch failed");
+                
                 const blob = await response.blob();
                 const fileName = `thumbnails/${currentUser.uid}/${Date.now()}_${name.replace(/\s+/g, '_').toLowerCase()}.png`;
                 const storageRef = storage.ref().child(fileName);
                 await storageRef.put(blob);
                 return await storageRef.getDownloadURL();
             } catch (e) {
-                console.warn("Could not save image to storage, skipping visual.", e);
+                console.warn("CORS/Fetch failed for image, skipping storage upload.", e);
                 return null;
             }
         }
