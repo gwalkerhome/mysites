@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>v1.3.0 | mysites - visual vault</title>
+    <title>v1.4.0 | mysites - visual vault</title>
     
     <script src="https://www.gstatic.com/firebasejs/10.12.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.1/firebase-auth-compat.js"></script>
@@ -64,17 +64,6 @@
 
         #main-content { flex-grow: 1; padding: 40px; overflow-y: auto; }
 
-        #featured-portal {
-            height: 320px;
-            background: linear-gradient(rgba(30, 41, 59, 0.7), rgba(15, 23, 42, 0.9)), 
-                        url('https://images.unsplash.com/photo-1614850523296-d8c1af93d400?auto=format&fit=crop&q=80&w=1000');
-            background-size: cover;
-            background-position: center;
-            border-radius: 20px; margin-bottom: 40px;
-            display: flex; flex-direction: column; justify-content: center; align-items: center;
-            border: 1px solid var(--border); text-align: center;
-        }
-
         .drop-zone-container { max-width: 800px; margin: 0 auto 50px; }
         .drop-zone {
             background: var(--card-bg); border: 2px dashed var(--border);
@@ -87,7 +76,6 @@
 
         #user-info { font-size: 0.75rem; color: var(--text-dim); margin-bottom: 8px; padding-left: 16px; }
 
-        /* Grid & Cards */
         #vault-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
@@ -103,8 +91,6 @@
             transition: transform 0.2s;
         }
 
-        .site-card:hover { transform: translateY(-5px); border-color: var(--accent); }
-
         .card-thumb {
             height: 160px;
             background: linear-gradient(45deg, #0f172a, #1e293b);
@@ -114,13 +100,14 @@
             color: var(--accent);
             font-size: 2rem;
             font-weight: 800;
+            background-size: cover;
+            background-position: center;
         }
 
         .card-content { padding: 16px; }
         .card-title { font-weight: 700; margin-bottom: 4px; color: var(--text); display: block; text-decoration: none; }
         .card-desc { font-size: 0.85rem; color: var(--text-dim); line-height: 1.4; }
-        .card-meta { margin-top: 12px; display: flex; gap: 8px; }
-        .badge { font-size: 0.7rem; padding: 4px 8px; border-radius: 4px; background: #020617; border: 1px solid var(--border); color: var(--text-dim); }
+        .badge { font-size: 0.7rem; padding: 4px 8px; border-radius: 4px; background: #020617; border: 1px solid var(--border); color: var(--text-dim); margin-right: 5px; }
     </style>
 </head>
 <body>
@@ -139,14 +126,9 @@
     </nav>
 
     <main id="main-content">
-        <section id="featured-portal">
-            <h1 style="font-size: 2.5rem; margin-bottom: 12px;">Your Personal Web Vault</h1>
-            <p style="color: var(--text-dim); font-size: 1.1rem; max-width: 500px;">Capture digital finds before they vanish.</p>
-        </section>
-
         <section class="drop-zone-container">
             <div class="drop-zone">
-                <h2>Add Site</h2>
+                <h2>Add to Vault</h2>
                 <div class="input-wrapper">
                     <input type="text" id="site-input" placeholder="Enter web address or name...">
                     <button class="btn-stage-1" style="background: var(--accent); color: #000;" onclick="handleInput()">Add Site</button>
@@ -156,8 +138,7 @@
         </section>
 
         <h3>My Collection</h3>
-        <div id="vault-grid">
-            </div>
+        <div id="vault-grid"></div>
     </main>
 
     <script>
@@ -174,6 +155,7 @@
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
         const auth = firebase.auth();
+        const storage = firebase.storage();
 
         let currentUser = null;
         let unsubscribe = null;
@@ -197,45 +179,29 @@
         });
 
         function startVaultListener(uid) {
-            unsubscribe = db.collection("sites")
-                .where("uid", "==", uid)
-                .orderBy("timestamp", "desc")
-                .onSnapshot(snapshot => {
-                    const grid = document.getElementById('vault-grid');
-                    grid.innerHTML = '';
-                    snapshot.forEach(doc => {
-                        const site = doc.data();
-                        const card = document.createElement('div');
-                        card.className = 'site-card';
-                        card.innerHTML = `
-                            <div class="card-thumb">${site.official_name.charAt(0)}</div>
-                            <div class="card-content">
-                                <a href="${site.primary_url}" target="_blank" class="card-title">${site.official_name}</a>
-                                <div class="card-desc">${site.short_description}</div>
-                                <div class="card-meta">
-                                    ${site.requires_login ? '<span class="badge">Auth Required</span>' : ''}
-                                    ${site.is_subscription ? '<span class="badge">Paid</span>' : ''}
-                                </div>
-                            </div>
-                        `;
-                        grid.appendChild(card);
-                    });
-                });
-        }
+            unsubscribe = db.collection("sites").where("uid", "==", uid).orderBy("timestamp", "desc").onSnapshot(snapshot => {
+                const grid = document.getElementById('vault-grid');
+                grid.innerHTML = '';
+                snapshot.forEach(async doc => {
+                    const site = doc.data();
+                    const card = document.createElement('div');
+                    card.className = 'site-card';
+                    
+                    let thumbStyle = `background: linear-gradient(45deg, #0f172a, #1e293b);`;
+                    if (site.storage_url) {
+                        thumbStyle = `background-image: url('${site.storage_url}');`;
+                    }
 
-        async function handleAuthClick() {
-            if (currentUser) {
-                await auth.signOut();
-            } else {
-                const email = prompt("Enter email:");
-                const pass = prompt("Enter password:");
-                if (!email || !pass) return;
-                try {
-                    await auth.signInWithEmailAndPassword(email, pass).catch(() => {
-                        return auth.createUserWithEmailAndPassword(email, pass);
-                    });
-                } catch (e) { alert("Auth error: " + e.message); }
-            }
+                    card.innerHTML = `
+                        <div class="card-thumb" style="${thumbStyle}">${site.storage_url ? '' : site.official_name.charAt(0)}</div>
+                        <div class="card-content">
+                            <a href="${site.primary_url}" target="_blank" class="card-title">${site.official_name}</a>
+                            <div class="card-desc">${site.short_description}</div>
+                        </div>
+                    `;
+                    grid.appendChild(card);
+                });
+            });
         }
 
         async function handleInput() {
@@ -247,8 +213,9 @@
             
             if (!value || !gKey) return;
 
-            statusMsg.innerText = "Gemini researching...";
-            const promptStr = `Research "${value}". Return ONLY JSON: {"official_name": "string", "primary_url": "string", "short_description": "max 20 words", "requires_login": boolean, "is_subscription": boolean, "thumbnail_prompt": "visual description"}`;
+            statusMsg.innerText = "Gemini researching & finding assets...";
+            
+            const promptStr = `Research "${value}". Return ONLY JSON: {"official_name": "string", "primary_url": "string", "short_description": "max 20 words", "requires_login": boolean, "is_subscription": boolean, "representative_image_url": "URL to high-res logo or OG image"}`;
 
             try {
                 const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${gKey}`, {
@@ -261,16 +228,51 @@
                 const jsonMatch = rawText.match(/\{[\s\S]*\}/);
                 const cleanJson = JSON.parse(jsonMatch[0]);
 
-                statusMsg.innerText = "Saving...";
+                let storageUrl = null;
+                if (cleanJson.representative_image_url) {
+                    statusMsg.innerText = "Securing image to your vault storage...";
+                    storageUrl = await uploadToVault(cleanJson.representative_image_url, cleanJson.official_name);
+                }
+
+                statusMsg.innerText = "Saving to database...";
                 await db.collection("sites").add({
                     ...cleanJson,
                     uid: currentUser.uid,
+                    storage_url: storageUrl,
                     timestamp: firebase.firestore.FieldValue.serverTimestamp()
                 });
+
                 statusMsg.innerText = "Success!";
                 inputField.value = '';
                 setTimeout(() => statusMsg.innerText = "", 3000);
-            } catch (e) { statusMsg.innerText = "Error: " + e.message; }
+            } catch (e) { 
+                console.error(e);
+                statusMsg.innerText = "Error: " + e.message; 
+            }
+        }
+
+        async function uploadToVault(url, name) {
+            try {
+                const response = await fetch(url);
+                const blob = await response.blob();
+                const fileName = `thumbnails/${currentUser.uid}/${Date.now()}_${name.replace(/\s+/g, '_').toLowerCase()}.png`;
+                const storageRef = storage.ref().child(fileName);
+                await storageRef.put(blob);
+                return await storageRef.getDownloadURL();
+            } catch (e) {
+                console.warn("Could not save image to storage, skipping visual.", e);
+                return null;
+            }
+        }
+
+        async function handleAuthClick() {
+            if (currentUser) { await auth.signOut(); } 
+            else {
+                const email = prompt("Email:"); const pass = prompt("Password:");
+                if (email && pass) {
+                    await auth.signInWithEmailAndPassword(email, pass).catch(() => auth.createUserWithEmailAndPassword(email, pass));
+                }
+            }
         }
     </script>
 </body>
