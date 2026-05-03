@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>v1.2.1 | mysites - visual vault</title>
+    <title>v1.3.0 | mysites - visual vault</title>
     
     <script src="https://www.gstatic.com/firebasejs/10.12.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.1/firebase-auth-compat.js"></script>
@@ -86,6 +86,41 @@
         #status-msg { margin-top: 15px; font-size: 0.85rem; color: var(--accent); min-height: 1.2rem; }
 
         #user-info { font-size: 0.75rem; color: var(--text-dim); margin-bottom: 8px; padding-left: 16px; }
+
+        /* Grid & Cards */
+        #vault-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 24px;
+            margin-top: 20px;
+        }
+
+        .site-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            overflow: hidden;
+            transition: transform 0.2s;
+        }
+
+        .site-card:hover { transform: translateY(-5px); border-color: var(--accent); }
+
+        .card-thumb {
+            height: 160px;
+            background: linear-gradient(45deg, #0f172a, #1e293b);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--accent);
+            font-size: 2rem;
+            font-weight: 800;
+        }
+
+        .card-content { padding: 16px; }
+        .card-title { font-weight: 700; margin-bottom: 4px; color: var(--text); display: block; text-decoration: none; }
+        .card-desc { font-size: 0.85rem; color: var(--text-dim); line-height: 1.4; }
+        .card-meta { margin-top: 12px; display: flex; gap: 8px; }
+        .badge { font-size: 0.7rem; padding: 4px 8px; border-radius: 4px; background: #020617; border: 1px solid var(--border); color: var(--text-dim); }
     </style>
 </head>
 <body>
@@ -119,6 +154,10 @@
                 <div id="status-msg"></div>
             </div>
         </section>
+
+        <h3>My Collection</h3>
+        <div id="vault-grid">
+            </div>
     </main>
 
     <script>
@@ -137,6 +176,7 @@
         const auth = firebase.auth();
 
         let currentUser = null;
+        let unsubscribe = null;
 
         auth.onAuthStateChanged(user => {
             currentUser = user;
@@ -146,12 +186,42 @@
                 ui.innerText = `Logged in: ${user.email}`;
                 ab.innerText = "Logout";
                 ab.style.background = "transparent"; ab.style.color = "var(--text-dim)";
+                startVaultListener(user.uid);
             } else {
                 ui.innerText = "Not Logged In";
                 ab.innerText = "Login / Signup";
                 ab.style.background = "var(--accent)"; ab.style.color = "#000";
+                if (unsubscribe) unsubscribe();
+                document.getElementById('vault-grid').innerHTML = '';
             }
         });
+
+        function startVaultListener(uid) {
+            unsubscribe = db.collection("sites")
+                .where("uid", "==", uid)
+                .orderBy("timestamp", "desc")
+                .onSnapshot(snapshot => {
+                    const grid = document.getElementById('vault-grid');
+                    grid.innerHTML = '';
+                    snapshot.forEach(doc => {
+                        const site = doc.data();
+                        const card = document.createElement('div');
+                        card.className = 'site-card';
+                        card.innerHTML = `
+                            <div class="card-thumb">${site.official_name.charAt(0)}</div>
+                            <div class="card-content">
+                                <a href="${site.primary_url}" target="_blank" class="card-title">${site.official_name}</a>
+                                <div class="card-desc">${site.short_description}</div>
+                                <div class="card-meta">
+                                    ${site.requires_login ? '<span class="badge">Auth Required</span>' : ''}
+                                    ${site.is_subscription ? '<span class="badge">Paid</span>' : ''}
+                                </div>
+                            </div>
+                        `;
+                        grid.appendChild(card);
+                    });
+                });
+        }
 
         async function handleAuthClick() {
             if (currentUser) {
@@ -160,9 +230,7 @@
                 const email = prompt("Enter email:");
                 const pass = prompt("Enter password:");
                 if (!email || !pass) return;
-                
                 try {
-                    // Try to login, if fails, try to create account
                     await auth.signInWithEmailAndPassword(email, pass).catch(() => {
                         return auth.createUserWithEmailAndPassword(email, pass);
                     });
