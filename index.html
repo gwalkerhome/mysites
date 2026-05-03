@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>v1.4.1 | mysites - visual vault</title>
+    <title>v1.4.2 | mysites - visual vault</title>
     
     <script src="https://www.gstatic.com/firebasejs/10.12.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.1/firebase-auth-compat.js"></script>
@@ -63,6 +63,18 @@
         .btn-active { background: var(--accent); color: #000; border-color: var(--accent); }
 
         #main-content { flex-grow: 1; padding: 40px; overflow-y: auto; }
+
+        /* RESTORED: Featured Portal Style */
+        #featured-portal {
+            height: 320px;
+            background: linear-gradient(rgba(30, 41, 59, 0.7), rgba(15, 23, 42, 0.9)), 
+                        url('https://images.unsplash.com/photo-1614850523296-d8c1af93d400?auto=format&fit=crop&q=80&w=1000');
+            background-size: cover;
+            background-position: center;
+            border-radius: 20px; margin-bottom: 40px;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            border: 1px solid var(--border); text-align: center;
+        }
 
         .drop-zone-container { max-width: 800px; margin: 0 auto 50px; }
         .drop-zone {
@@ -125,6 +137,11 @@
     </nav>
 
     <main id="main-content">
+        <section id="featured-portal">
+            <h1 style="font-size: 2.5rem; margin-bottom: 12px;">Your Personal Web Vault</h1>
+            <p style="color: var(--text-dim); font-size: 1.1rem; max-width: 500px;">Capture digital finds before they vanish.</p>
+        </section>
+
         <section class="drop-zone-container">
             <div class="drop-zone">
                 <h2>Add to Vault</h2>
@@ -199,14 +216,11 @@
         }
 
         function startVaultListener(uid) {
-            // Primary sorted query
             const sitesRef = db.collection("sites").where("uid", "==", uid);
-            
             unsubscribe = sitesRef.orderBy("timestamp", "desc").onSnapshot(
                 snapshot => renderSites(snapshot),
                 error => {
-                    console.warn("Sorting failed (likely missing index). Falling back to unsorted list.");
-                    // Fallback to unsorted if index isn't built yet
+                    console.warn("Sorting failed, using unsorted fallback.");
                     sitesRef.onSnapshot(renderSites);
                 }
             );
@@ -222,8 +236,7 @@
             if (!value || !gKey) return;
 
             statusMsg.innerText = "Gemini researching...";
-            
-            const promptStr = `Research "${value}". Return ONLY JSON: {"official_name": "string", "primary_url": "string", "short_description": "max 20 words", "representative_image_url": "URL to high-res logo or OG image"}`;
+            const promptStr = `Research "${value}". Return ONLY JSON: {"official_name": "string", "primary_url": "string", "short_description": "max 20 words", "representative_image_url": "URL to high-res logo"}`;
 
             try {
                 const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${gKey}`, {
@@ -238,11 +251,10 @@
 
                 let storageUrl = null;
                 if (cleanJson.representative_image_url) {
-                    statusMsg.innerText = "Attempting to secure brand asset...";
+                    statusMsg.innerText = "Saving brand asset...";
                     storageUrl = await uploadToVault(cleanJson.representative_image_url, cleanJson.official_name);
                 }
 
-                statusMsg.innerText = "Finalizing...";
                 await db.collection("sites").add({
                     ...cleanJson,
                     uid: currentUser.uid,
@@ -254,25 +266,21 @@
                 inputField.value = '';
                 setTimeout(() => statusMsg.innerText = "", 3000);
             } catch (e) { 
-                console.error("Vault Error:", e);
+                console.error(e);
                 statusMsg.innerText = "Error: " + e.message; 
             }
         }
 
         async function uploadToVault(url, name) {
             try {
-                // Try to use a CORS proxy to bypass security blocks on site assets
                 const proxiedUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`;
                 const response = await fetch(proxiedUrl);
-                if (!response.ok) throw new Error("Proxy fetch failed");
-                
                 const blob = await response.blob();
-                const fileName = `thumbnails/${currentUser.uid}/${Date.now()}_${name.replace(/\s+/g, '_').toLowerCase()}.png`;
+                const fileName = `thumbnails/${currentUser.uid}/${Date.now()}.png`;
                 const storageRef = storage.ref().child(fileName);
                 await storageRef.put(blob);
                 return await storageRef.getDownloadURL();
             } catch (e) {
-                console.warn("CORS/Fetch failed for image, skipping storage upload.", e);
                 return null;
             }
         }
