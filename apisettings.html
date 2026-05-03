@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>v1.1.0 | mysites - api settings</title>
+    <title>v1.2.0 | mysites - api settings</title>
     <style>
         :root {
             --bg-color: #0f172a;
@@ -33,6 +33,9 @@
             padding: 24px;
             border-right: 1px solid var(--border);
             flex-shrink: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
         }
 
         .btn-stage-1 {
@@ -44,9 +47,11 @@
             cursor: pointer;
             width: 100%;
             text-align: left;
-            margin-bottom: 10px;
             transition: all 0.2s;
             font-size: 0.9rem;
+            text-decoration: none;
+            display: block;
+            box-sizing: border-box;
         }
 
         .btn-stage-1:hover { opacity: 0.8; transform: translateX(4px); }
@@ -61,9 +66,11 @@
             padding: 20px 40px;
             border-bottom: 1px solid var(--border);
             background: var(--sidebar-bg);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
         }
 
-        /* Split Screen Layout */
         #split-container {
             display: flex;
             flex-grow: 1;
@@ -118,12 +125,30 @@
             box-sizing: border-box;
         }
 
-        /* Table Styling */
+        .list-controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .copy-btn {
+            background: var(--border);
+            color: var(--text);
+            border: none;
+            padding: 5px 12px;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .copy-btn:hover { background: var(--text-dim); }
+
         .model-table {
             width: 100%;
             border-collapse: collapse;
             font-size: 0.8rem;
-            margin-top: 10px;
         }
 
         .model-table th {
@@ -143,6 +168,7 @@
             background: rgba(0,0,0,0.3);
             padding: 2px 4px;
             border-radius: 4px;
+            cursor: pointer;
         }
     </style>
 </head>
@@ -150,8 +176,10 @@
 
     <nav id="sidebar">
         <h2 style="color: var(--accent-gemini);">mysites</h2>
-        <button class="btn-stage-1" onclick="location.href='index.html'">Dashboard</button>
-        <button class="btn-stage-1" onclick="location.href='settings.html'">Back to Settings</button>
+        <a href="index.html" class="btn-stage-1">Dashboard</a>
+        <a href="settings.html" class="btn-stage-1">Back to Settings</a>
+        <hr style="width: 100%; border: 0; border-top: 1px solid var(--border); margin: 10px 0;">
+        <a href="apitest.html" class="btn-stage-1" style="border-color: var(--accent-gemini);">Launch API Test</a>
     </nav>
 
     <div id="main-wrapper">
@@ -161,10 +189,7 @@
 
         <div id="split-container">
             <section class="api-panel gemini-panel">
-                <div class="panel-title gemini-text">
-                    <span>♊</span> Gemini Flash
-                </div>
-                
+                <div class="panel-title gemini-text"><span>♊</span> Gemini Flash</div>
                 <div class="card">
                     <div class="form-group">
                         <label>Google AI API Key</label>
@@ -174,7 +199,10 @@
                 </div>
 
                 <div class="card">
-                    <h4 style="margin: 0 0 10px 0;">Available Gemini Models</h4>
+                    <div class="list-controls">
+                        <h4 style="margin: 0;">Model Directory</h4>
+                        <button class="copy-btn" onclick="copyTable('gemini-list')">Copy All IDs</button>
+                    </div>
                     <div id="gemini-list">
                         <p style="color: var(--text-dim); font-size: 0.8rem;">Refresh to load models...</p>
                     </div>
@@ -182,10 +210,7 @@
             </section>
 
             <section class="api-panel">
-                <div class="panel-title openai-text">
-                    <span>✳️</span> OpenAI GPT
-                </div>
-
+                <div class="panel-title openai-text"><span>✳️</span> OpenAI GPT</div>
                 <div class="card">
                     <div class="form-group">
                         <label>OpenAI API Key</label>
@@ -195,7 +220,10 @@
                 </div>
 
                 <div class="card">
-                    <h4 style="margin: 0 0 10px 0;">Available OpenAI Models</h4>
+                    <div class="list-controls">
+                        <h4 style="margin: 0;">Model Directory</h4>
+                        <button class="copy-btn" onclick="copyTable('openai-list')">Copy All IDs</button>
+                    </div>
                     <div id="openai-list">
                         <p style="color: var(--text-dim); font-size: 0.8rem;">Refresh to load models...</p>
                     </div>
@@ -208,7 +236,6 @@
         window.onload = () => {
             document.getElementById('gemini-key').value = localStorage.getItem('gemini_key') || '';
             document.getElementById('openai-key').value = localStorage.getItem('openai_key') || '';
-            
             if(localStorage.getItem('gemini_key')) fetchGeminiModels();
             if(localStorage.getItem('openai_key')) fetchOpenAIModels();
         };
@@ -227,15 +254,14 @@
             const key = localStorage.getItem('gemini_key');
             const container = document.getElementById('gemini-list');
             if(!key) return;
-
             container.innerHTML = "Loading...";
             try {
                 const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${key}`);
                 const data = await res.json();
-                
                 let html = `<table class="model-table"><thead><tr><th>Model ID</th><th>Limit</th></tr></thead><tbody>`;
                 data.models.forEach(m => {
-                    html += `<tr><td class="id-code">${m.name.split('/')[1]}</td><td>${Math.round(m.inputTokenLimit/1000)}k</td></tr>`;
+                    const id = m.name.split('/')[1];
+                    html += `<tr><td class="id-code" onclick="copyText('${id}')">${id}</td><td>${Math.round(m.inputTokenLimit/1000)}k</td></tr>`;
                 });
                 html += `</tbody></table>`;
                 container.innerHTML = html;
@@ -246,27 +272,31 @@
             const key = localStorage.getItem('openai_key');
             const container = document.getElementById('openai-list');
             if(!key) return;
-
             container.innerHTML = "Loading...";
             try {
-                const res = await fetch('https://api.openai.com/v1/models', {
-                    headers: { 'Authorization': `Bearer ${key}` }
-                });
+                const res = await fetch('https://api.openai.com/v1/models', { headers: { 'Authorization': `Bearer ${key}` } });
                 const data = await res.json();
-                
-                // Sort models alphabetically to find GPT ones easier
                 data.data.sort((a, b) => a.id.localeCompare(b.id));
-
-                let html = `<table class="model-table"><thead><tr><th>Model ID</th><th>Owner</th></tr></thead><tbody>`;
+                let html = `<table class="model-table"><thead><tr><th>Model ID</th></tr></thead><tbody>`;
                 data.data.forEach(m => {
-                    // Only show common models to avoid a massive list of legacy babbage/davinci stuff
-                    if(m.id.includes('gpt') || m.id.includes('o1') || m.id.includes('dall-e')) {
-                        html += `<tr><td class="id-code">${m.id}</td><td>${m.owned_by}</td></tr>`;
+                    if(m.id.includes('gpt') || m.id.includes('o1') || m.id.includes('o3') || m.id.includes('o4') || m.id.includes('o5')) {
+                        html += `<tr><td class="id-code" onclick="copyText('${m.id}')">${m.id}</td></tr>`;
                     }
                 });
                 html += `</tbody></table>`;
                 container.innerHTML = html;
             } catch (e) { container.innerHTML = "Error loading models."; }
+        }
+
+        function copyText(text) {
+            navigator.clipboard.writeText(text);
+            alert("Copied: " + text);
+        }
+
+        function copyTable(containerId) {
+            const ids = Array.from(document.querySelectorAll(`#${containerId} .id-code`)).map(td => td.innerText).join('\n');
+            navigator.clipboard.writeText(ids);
+            alert("All IDs copied to clipboard.");
         }
     </script>
 </body>
