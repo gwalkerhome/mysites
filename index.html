@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>v1.8.4 | mysites - command center</title>
+    <title>v1.8.5 | mysites - full utility</title>
     
     <script src="https://www.gstatic.com/firebasejs/10.12.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.1/firebase-auth-compat.js"></script>
@@ -16,6 +16,7 @@
             --surface: #0f172a;
             --card-bg: #1e293b;
             --accent: #38bdf8;
+            --danger: #f87171;
             --text: #f8fafc;
             --text-dim: #94a3b8;
             --border: #334155;
@@ -30,7 +31,6 @@
             display: flex; height: 100vh; width: 100vw; overflow: hidden; 
         }
 
-        /* SIDEBAR */
         #sidebar { 
             width: var(--sidebar-w); background: var(--bg-color); 
             display: flex; flex-direction: column; align-items: center; 
@@ -44,10 +44,8 @@
         }
         .nav-icon:hover, .nav-icon.active { background: var(--accent); color: #000; }
 
-        /* VIEWPORT */
         #viewport { flex-grow: 1; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
 
-        /* INTELLIGENCE ROW (Top Bar) */
         #top-bar { 
             height: var(--top-h); padding: 0 30px; display: flex; gap: 15px; align-items: center; 
             border-bottom: 1px solid var(--border); background: var(--bg-color); flex-shrink: 0;
@@ -61,14 +59,11 @@
             padding: 8px 12px; background: var(--surface); border: 1px solid var(--border);
             border-radius: 6px; text-decoration: none; color: var(--text-dim); font-size: 0.75rem; font-weight: bold;
         }
-        .app-link:hover { color: var(--accent); border-color: var(--accent); }
 
-        /* SCROLLABLE CONTENT */
         #main-content { flex-grow: 1; overflow-y: auto; padding: 30px; }
 
         .dashboard-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 25px; margin-bottom: 40px; }
 
-        /* HERO */
         #featured-portal { 
             min-height: 280px; border-radius: 24px; border: 1px solid var(--border);
             background: linear-gradient(rgba(15,23,42,0.7), rgba(15,23,42,0.95)), url('https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&q=80&w=1500');
@@ -81,16 +76,28 @@
         }
         .drop-bar input { background: transparent; border: none; color: white; flex: 1; outline: none; }
 
-        /* UTILITY WIDGETS */
         .widget { background: var(--surface); border: 1px solid var(--border); border-radius: 15px; padding: 15px; margin-bottom: 15px; }
         #scratchpad { width: 100%; height: 110px; background: transparent; border: none; color: var(--text); resize: none; outline: none; font-size: 0.85rem; line-height: 1.4; }
         
-        /* VAULT GRID */
-        #vault-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 25px; padding-bottom: 60px; }
-        .site-card { background: var(--card-bg); border-radius: 16px; overflow: hidden; border: 1px solid var(--border); height: 260px; transition: 0.3s; }
+        #vault-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 25px; padding-bottom: 60px; }
+        .site-card { background: var(--card-bg); border-radius: 16px; overflow: hidden; border: 1px solid var(--border); height: 260px; transition: 0.3s; position: relative; }
+        .site-card:hover .card-actions { opacity: 1; }
+        
         .card-thumb { height: 140px; background-size: cover; background-position: center; background-color: #020617; }
         .card-content { padding: 15px; }
-        .card-title { font-weight: 700; color: white; text-decoration: none; display: block; margin-bottom: 5px; }
+        .card-title { font-weight: 700; color: white; text-decoration: none; display: block; margin-bottom: 5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+        .card-actions { position: absolute; top: 10px; right: 10px; display: flex; gap: 6px; opacity: 0; transition: 0.2s; }
+        .action-btn { width: 30px; height: 30px; background: rgba(0,0,0,0.8); border: 1px solid var(--border); color: white; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 0.8rem; }
+        .action-btn:hover { background: var(--accent); color: black; }
+        .btn-del:hover { background: var(--danger); color: white; }
+
+        /* MODAL */
+        #edit-modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 1000; align-items: center; justify-content: center; padding: 20px; }
+        .modal-content { background: var(--surface); width: 100%; max-width: 450px; border-radius: 20px; padding: 30px; border: 1px solid var(--border); }
+        .modal-field { margin-bottom: 15px; }
+        .modal-field label { display: block; font-size: 0.75rem; color: var(--text-dim); margin-bottom: 5px; }
+        .modal-field input, .modal-field textarea { width: 100%; padding: 12px; border-radius: 8px; background: var(--bg-color); border: 1px solid var(--border); color: white; }
 
         @media (max-width: 768px) {
             body { flex-direction: column; }
@@ -127,9 +134,9 @@
             <div class="dashboard-grid">
                 <section id="featured-portal">
                     <h2 id="hero-title" style="margin:0; font-size: 2rem;">Welcome to the Vault</h2>
-                    <p id="hero-desc" style="color:var(--text-dim); margin:10px 0 20px 0;">Please login to see your sites.</p>
+                    <p id="hero-desc" style="color:var(--text-dim); margin:10px 0 20px 0;">Sign in to unlock your sites.</p>
                     <div class="drop-bar">
-                        <input type="text" id="site-input" placeholder="Enter URL or Site Name...">
+                        <input type="text" id="site-input" placeholder="Drop URL here...">
                         <button onclick="handleInput()" style="background:var(--accent); border:none; padding:8px 20px; border-radius:8px; cursor:pointer; font-weight:bold;">Save</button>
                     </div>
                 </section>
@@ -145,10 +152,22 @@
                     </div>
                 </div>
             </div>
-
             <div id="status-msg" style="color:var(--accent); font-size:0.8rem; margin-bottom:15px;"></div>
             <div id="vault-grid"></div>
         </main>
+    </div>
+
+    <div id="edit-modal">
+        <div class="modal-content">
+            <h2 style="margin-top: 0; font-size: 1.2rem;">Edit Site</h2>
+            <div class="modal-field"><label>Name</label><input type="text" id="edit-name"></div>
+            <div class="modal-field"><label>Description</label><textarea id="edit-desc" rows="3"></textarea></div>
+            <div class="modal-field"><label>Change Image</label><input type="file" id="edit-file" accept="image/*"></div>
+            <div style="display: flex; gap: 10px;">
+                <button onclick="saveChanges()" style="flex:1; background:var(--accent); border:none; padding:10px; border-radius:8px; cursor:pointer; font-weight:bold;">Save Changes</button>
+                <button onclick="closeModal()" style="flex:1; background:var(--surface); border:1px solid var(--border); color:white; padding:10px; border-radius:8px; cursor:pointer;">Cancel</button>
+            </div>
+        </div>
     </div>
 
     <script>
@@ -166,6 +185,7 @@
         const storage = firebase.storage();
 
         let currentUser = null;
+        let currentEditId = null;
         let unsubscribe = null;
 
         // SCRATCHPAD
@@ -177,13 +197,7 @@
         let timeLeft = 1500; let timerInterval = null;
         function toggleTimer() {
             if(timerInterval) { clearInterval(timerInterval); timerInterval = null; }
-            else {
-                timerInterval = setInterval(() => {
-                    timeLeft--;
-                    let m = Math.floor(timeLeft/60); let s = timeLeft % 60;
-                    document.getElementById('timer').innerText = `${m}:${s < 10 ? '0'+s : s}`;
-                }, 1000);
-            }
+            else { timerInterval = setInterval(() => { timeLeft--; let m = Math.floor(timeLeft/60); let s = timeLeft % 60; document.getElementById('timer').innerText = `${m}:${s < 10 ? '0'+s : s}`; }, 1000); }
         }
 
         auth.onAuthStateChanged(user => {
@@ -198,6 +212,7 @@
             let first = true;
             snapshot.forEach(doc => {
                 const site = doc.data();
+                const id = doc.id;
                 if(first) {
                     document.getElementById('hero-title').innerText = site.official_name;
                     document.getElementById('hero-desc').innerText = site.short_description;
@@ -207,10 +222,14 @@
                 const card = document.createElement('div');
                 card.className = 'site-card';
                 card.innerHTML = `
+                    <div class="card-actions">
+                        <button class="action-btn" onclick='openEditModal("${id}", ${JSON.stringify(site).replace(/'/g, "&apos;")})'>✎</button>
+                        <button class="action-btn btn-del" onclick="deleteSite('${id}', '${site.storage_url}')">×</button>
+                    </div>
                     <div class="card-thumb" style="background-image: url('${site.storage_url || ''}')"></div>
                     <div class="card-content">
                         <a href="${site.primary_url}" target="_blank" class="card-title">${site.official_name}</a>
-                        <p style="font-size:0.8rem; color:var(--text-dim); margin:0;">${site.short_description}</p>
+                        <p style="font-size:0.75rem; color:var(--text-dim); margin:0; line-height:1.3;">${site.short_description}</p>
                     </div>
                 `;
                 grid.appendChild(card);
@@ -220,15 +239,33 @@
         function startVaultListener(uid) {
             if (unsubscribe) unsubscribe();
             const sitesRef = db.collection("sites").where("uid", "==", uid);
-            
-            // RESTORED WATERFALL LISTENER FROM v1.6.1
-            unsubscribe = sitesRef.orderBy("timestamp", "desc").onSnapshot(
-                snapshot => renderSites(snapshot),
-                error => {
-                    console.warn("Index missing, showing unsorted list.");
-                    sitesRef.onSnapshot(renderSites);
+            unsubscribe = sitesRef.orderBy("timestamp", "desc").onSnapshot(snapshot => renderSites(snapshot), e => sitesRef.onSnapshot(renderSites));
+        }
+
+        function openEditModal(id, data) {
+            currentEditId = id;
+            document.getElementById('edit-name').value = data.official_name;
+            document.getElementById('edit-desc').value = data.short_description;
+            document.getElementById('edit-modal').style.display = 'flex';
+        }
+        function closeModal() { document.getElementById('edit-modal').style.display = 'none'; }
+
+        async function saveChanges() {
+            const up = { official_name: document.getElementById('edit-name').value, short_description: document.getElementById('edit-desc').value };
+            const file = document.getElementById('edit-file').files[0];
+            try {
+                if(file) {
+                    const ref = storage.ref().child(`thumbnails/${currentUser.uid}/${Date.now()}.png`);
+                    await ref.put(file);
+                    up.storage_url = await ref.getDownloadURL();
                 }
-            );
+                await db.collection("sites").doc(currentEditId).update(up);
+                closeModal();
+            } catch (e) { alert("Error"); }
+        }
+
+        async function deleteSite(id, url) {
+            if(confirm("Delete?")) { await db.collection("sites").doc(id).delete(); if(url) storage.refFromURL(url).delete().catch(()=>{}); }
         }
 
         async function handleInput() {
@@ -252,17 +289,14 @@
                 await ref.put(blob);
                 const sUrl = await ref.getDownloadURL();
                 await db.collection("sites").add({ ...cleanJson, uid: currentUser.uid, storage_url: sUrl, timestamp: firebase.firestore.FieldValue.serverTimestamp() });
-                status.innerText = "Saved!";
+                status.innerText = "";
                 document.getElementById('site-input').value = '';
-            } catch (e) { status.innerText = "Error adding site."; }
+            } catch (e) { status.innerText = "Error"; }
         }
 
         async function handleAuthClick() {
-            if (currentUser) { await auth.signOut(); }
-            else {
-                const email = prompt("Email:"); const pass = prompt("Password:");
-                if (email && pass) auth.signInWithEmailAndPassword(email, pass).catch(() => auth.createUserWithEmailAndPassword(email, pass));
-            }
+            if (currentUser) await auth.signOut();
+            else { const e = prompt("Email:"); const p = prompt("Password:"); if(e && p) auth.signInWithEmailAndPassword(e,p).catch(()=>auth.createUserWithEmailAndPassword(e,p)); }
         }
     </script>
 </body>
