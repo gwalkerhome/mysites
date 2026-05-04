@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>v1.7.0 | mysites - visual home</title>
+    <title>v1.8.0 | mysites - home command</title>
     
     <script src="https://www.gstatic.com/firebasejs/10.12.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.1/firebase-auth-compat.js"></script>
@@ -12,192 +12,153 @@
 
     <style>
         :root {
-            --bg-color: #0f172a;
-            --sidebar-bg: #020617;
+            --bg-color: #020617;
+            --surface: #0f172a;
             --card-bg: #1e293b;
             --accent: #38bdf8;
-            --danger: #f87171;
             --text: #f8fafc;
             --text-dim: #94a3b8;
             --border: #334155;
-            --sidebar-width: 80px;
+            --sidebar-w: 70px;
         }
 
         body { 
-            margin: 0; 
-            font-family: 'Inter', system-ui, sans-serif; 
-            background-color: var(--bg-color); 
-            color: var(--text); 
-            display: flex; 
-            height: 100vh; 
-            overflow: hidden; 
+            margin: 0; font-family: 'Inter', sans-serif; 
+            background: var(--bg-color); color: var(--text); 
+            display: flex; height: 100vh; overflow: hidden; 
         }
 
-        /* 10% SIDEBAR WITH ICONS */
+        /* SIDEBAR (Desktop) / BOTTOM BAR (Mobile) */
         #sidebar { 
-            width: var(--sidebar-width); 
-            background: var(--sidebar-bg); 
-            display: flex; 
-            flex-direction: column; 
-            align-items: center; 
-            padding: 24px 0; 
-            border-right: 1px solid var(--border); 
-            flex-shrink: 0; 
+            width: var(--sidebar-w); background: var(--bg-color); 
+            display: flex; flex-direction: column; align-items: center; 
+            padding: 20px 0; border-right: 1px solid var(--border); z-index: 100;
         }
 
-        .nav-icon {
-            width: 44px;
-            height: 44px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border-radius: 12px;
-            margin-bottom: 20px;
-            cursor: pointer;
-            color: var(--text-dim);
-            transition: all 0.2s;
-            text-decoration: none;
-            font-size: 1.2rem;
-            background: var(--card-bg);
-            border: 1px solid var(--border);
+        .nav-icon { 
+            width: 44px; height: 44px; display: flex; align-items: center; justify-content: center;
+            border-radius: 12px; margin-bottom: 15px; cursor: pointer; text-decoration: none;
+            background: var(--surface); color: var(--text-dim); border: 1px solid var(--border);
+            font-size: 1.2rem; transition: 0.2s;
+        }
+        .nav-icon:hover, .nav-icon.active { background: var(--accent); color: #000; transform: scale(1.1); }
+
+        /* MAIN LAYOUT */
+        #viewport { flex-grow: 1; display: flex; flex-direction: column; overflow: hidden; }
+
+        /* INTELLIGENCE ROW (Fixed) */
+        #top-bar { 
+            padding: 15px 30px; display: flex; gap: 15px; align-items: center; 
+            border-bottom: 1px solid var(--border); background: var(--bg-color);
+        }
+        .search-box { 
+            flex: 1; background: var(--surface); border: 1px solid var(--border);
+            padding: 10px 15px; border-radius: 8px; color: white; outline: none;
+        }
+        .apparatus { display: flex; gap: 8px; }
+        .app-link { 
+            padding: 8px 12px; background: var(--surface); border: 1px solid var(--border);
+            border-radius: 6px; text-decoration: none; color: var(--text-dim); font-size: 0.8rem;
         }
 
-        .nav-icon:hover, .nav-icon.active { 
-            background: var(--accent); 
-            color: #000; 
-            transform: scale(1.05); 
+        /* SCROLLABLE CONTENT */
+        #main-content { flex-grow: 1; overflow-y: auto; padding: 30px; }
+
+        .dashboard-grid { 
+            display: grid; grid-template-columns: 2fr 1fr; gap: 25px; margin-bottom: 30px;
         }
 
-        #main-scroll-container {
-            flex-grow: 1;
-            overflow-y: auto;
-            scroll-behavior: smooth;
-            padding: 40px;
-        }
-
-        /* SITE OF THE DAY HERO */
+        /* HERO & DROP */
         #featured-portal { 
-            height: 350px; 
-            background: linear-gradient(rgba(30, 41, 59, 0.4), rgba(15, 23, 42, 0.95)), 
-                        url('https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&q=80&w=1500'); 
-            background-size: cover; 
-            background-position: center; 
-            border-radius: 24px; 
-            margin-bottom: 50px; 
-            display: flex; 
-            flex-direction: column; 
-            justify-content: flex-end; 
-            padding: 40px;
-            border: 1px solid var(--border);
-            position: relative;
+            height: 240px; border-radius: 20px; border: 1px solid var(--border);
+            background: linear-gradient(rgba(15,23,42,0.6), rgba(15,23,42,0.9)), url('https://images.unsplash.com/photo-1614850523296-d8c1af93d400?auto=format&fit=crop&q=80&w=1000');
+            background-size: cover; background-position: center;
+            display: flex; flex-direction: column; justify-content: center; padding: 30px;
         }
-
-        .hero-tag {
-            background: var(--accent);
-            color: #000;
-            padding: 4px 12px;
-            border-radius: 20px;
-            font-size: 0.75rem;
-            font-weight: 700;
-            width: fit-content;
-            margin-bottom: 12px;
+        .drop-bar { 
+            margin-top: 15px; background: rgba(255,255,255,0.1); backdrop-filter: blur(10px);
+            padding: 8px; border-radius: 12px; display: flex; gap: 10px;
         }
+        .drop-bar input { background: transparent; border: none; color: white; flex: 1; outline: none; }
 
-        .drop-zone-mini {
-            max-width: 600px;
-            margin: 0 auto 40px;
-            background: var(--card-bg);
-            padding: 10px;
-            border-radius: 16px;
-            border: 1px solid var(--border);
-            display: flex;
-            gap: 8px;
-        }
-
-        #site-input {
-            flex-grow: 1;
-            background: transparent;
-            border: none;
-            color: white;
-            padding: 10px 15px;
-            outline: none;
-        }
-
-        #vault-grid { 
-            display: grid; 
-            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); 
-            gap: 20px; 
-        }
-
-        .site-card { 
-            background: var(--card-bg); 
-            border: 1px solid var(--border); 
-            border-radius: 16px; 
-            overflow: hidden; 
-            position: relative; 
-            height: 280px;
-            display: flex;
-            flex-direction: column;
-        }
-
-        .card-thumb { 
-            height: 140px; 
-            background-size: cover; 
-            background-position: top center; 
-            flex-shrink: 0;
-            background-color: #020617;
-        }
-
-        .card-content { padding: 12px; }
-        .card-title { font-weight: 700; color: var(--text); text-decoration: none; font-size: 0.95rem; }
-        .card-desc { font-size: 0.8rem; color: var(--text-dim); margin-top: 5px; line-height: 1.3; }
-
-        .card-actions { position: absolute; top: 8px; right: 8px; display: flex; gap: 5px; opacity: 0; transition: 0.2s; }
-        .site-card:hover .card-actions { opacity: 1; }
+        /* UTILITY BOXES */
+        .utility-rail { display: flex; flex-direction: column; gap: 15px; }
+        .widget { background: var(--surface); border: 1px solid var(--border); border-radius: 15px; padding: 15px; }
+        #scratchpad { width: 100%; height: 100px; background: transparent; border: none; color: var(--text); resize: none; outline: none; font-size: 0.9rem; }
         
-        .action-btn { width: 28px; height: 28px; border-radius: 50%; background: rgba(0,0,0,0.8); border: 1px solid var(--border); color: white; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 0.8rem; }
-        .action-btn:hover { background: var(--accent); color: black; }
+        /* VAULT GRID */
+        #vault-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 20px; }
+        .site-card { background: var(--card-bg); border-radius: 12px; overflow: hidden; border: 1px solid var(--border); height: 240px; position: relative; }
+        .card-thumb { height: 120px; background-size: cover; background-position: center; }
 
-        /* SCROLLBAR STYLE */
-        ::-webkit-scrollbar { width: 8px; }
-        ::-webkit-scrollbar-track { background: var(--bg-color); }
-        ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 10px; }
+        /* MOBILE OVERRIDES */
+        @media (max-width: 768px) {
+            body { flex-direction: column; }
+            #sidebar { 
+                width: 100%; height: 60px; flex-direction: row; 
+                order: 2; border-right: none; border-top: 1px solid var(--border);
+                justify-content: space-around; padding: 0;
+            }
+            .nav-icon { margin-bottom: 0; }
+            #top-bar { flex-direction: column; }
+            .dashboard-grid { grid-template-columns: 1fr; }
+            #main-content { padding: 15px; }
+        }
     </style>
 </head>
 <body>
 
     <nav id="sidebar">
-        <div style="font-weight: 900; color: var(--accent); margin-bottom: 40px; font-size: 1.2rem;">MS</div>
-        
-        <a href="index.html" class="nav-icon active" title="Home">⌂</a>
-        <a href="#" class="nav-icon" title="Favorites">♥</a>
-        <a href="#" class="nav-icon" title="Curiosities">✨</a>
-        <a href="apisettings.html" class="nav-icon" title="Settings">⚙</a>
-        
-        <div style="margin-top: auto;">
-            <div id="auth-indicator" style="width: 10px; height: 10px; border-radius: 50%; background: var(--danger); margin-bottom: 20px;"></div>
-            <button class="nav-icon" onclick="handleAuthClick()" title="Login/Logout">⎋</button>
-        </div>
+        <div style="color:var(--accent); font-weight:900; margin-bottom:20px;" class="desktop-only">MS</div>
+        <a href="index.html" class="nav-icon active">⌂</a>
+        <a href="#" class="nav-icon">♥</a>
+        <a href="#" class="nav-icon">✨</a>
+        <a href="apisettings.html" class="nav-icon">⚙</a>
+        <button class="nav-icon" onclick="handleAuthClick()" style="margin-top:auto;">⎋</button>
     </nav>
 
-    <main id="main-scroll-container">
-        
-        <section id="featured-portal">
-            <div class="hero-tag">SITE OF THE DAY</div>
-            <h1 id="hero-title" style="margin: 0; font-size: 2.5rem;">Exploring the Web...</h1>
-            <p id="hero-desc" style="color: var(--text-dim); max-width: 600px;">Your visual vault is ready for new discoveries.</p>
-        </section>
+    <div id="viewport">
+        <header id="top-bar">
+            <form action="https://www.google.com/search" method="GET" style="flex:1; display:flex;">
+                <input type="text" name="q" class="search-box" placeholder="Google Search...">
+            </form>
+            <input type="text" id="gemini-chat" class="search-box" style="border-color: var(--accent);" placeholder="Ask Gemini AI...">
+            <div class="apparatus">
+                <a href="https://github.com" target="_blank" class="app-link">GitHub</a>
+                <a href="https://firebase.google.com" target="_blank" class="app-link">Firebase</a>
+            </div>
+        </header>
 
-        <div class="drop-zone-mini">
-            <input type="text" id="site-input" placeholder="Drop a URL or site name here...">
-            <button class="btn-stage-1" style="background: var(--accent); color: #000; padding: 8px 20px;" onclick="handleInput()">Add</button>
-        </div>
+        <main id="main-content">
+            <div class="dashboard-grid">
+                <section id="featured-portal">
+                    <h2 id="hero-title" style="margin:0">Site of the Day</h2>
+                    <p id="hero-desc" style="color:var(--text-dim); margin:5px 0 15px 0;">Your latest discovery awaits.</p>
+                    <div class="drop-bar">
+                        <input type="text" id="site-input" placeholder="Drop URL to save...">
+                        <button onclick="handleInput()" style="background:var(--accent); border:none; padding:5px 15px; border-radius:8px; cursor:pointer;">Save</button>
+                    </div>
+                </section>
 
-        <div id="status-msg" style="text-align: center; margin-bottom: 20px; font-size: 0.8rem; color: var(--accent);"></div>
+                <div class="utility-rail">
+                    <div class="widget">
+                        <div style="display:flex; justify-content:space-between; margin-bottom:10px; font-size:0.7rem; color:var(--accent);">
+                            <span>SCRATCHPAD</span>
+                            <span id="save-status">Auto-saved</span>
+                        </div>
+                        <textarea id="scratchpad" placeholder="Jot down a thought..."></textarea>
+                    </div>
+                    <div class="widget" style="display:flex; justify-content:space-between; align-items:center;">
+                        <span style="font-size:0.8rem;">FOCUS</span>
+                        <div id="timer" style="font-weight:bold; font-size:1.2rem; cursor:pointer;" onclick="toggleTimer()">25:00</div>
+                    </div>
+                </div>
+            </div>
 
-        <h2 style="font-size: 1.2rem; margin-bottom: 20px; color: var(--text-dim);">Recent Discoveries</h2>
-        <div id="vault-grid"></div>
-    </main>
+            <div id="status-msg" style="color:var(--accent); font-size:0.8rem; margin-bottom:10px;"></div>
+            <div id="vault-grid"></div>
+        </main>
+    </div>
 
     <script>
         const firebaseConfig = {
@@ -208,7 +169,6 @@
             messagingSenderId: "403581028557",
             appId: "1:403581028557:web:13058c895b707bf7814184"
         };
-
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
         const auth = firebase.auth();
@@ -216,42 +176,53 @@
 
         let currentUser = null;
 
+        // SCRATCHPAD LOGIC
+        const pad = document.getElementById('scratchpad');
+        pad.value = localStorage.getItem('vault_notes') || "";
+        pad.addEventListener('input', () => {
+            localStorage.setItem('vault_notes', pad.value);
+            document.getElementById('save-status').innerText = "Saving...";
+            setTimeout(()=> document.getElementById('save-status').innerText = "Saved", 1000);
+        });
+
+        // TIMER LOGIC
+        let timeLeft = 1500; let timerInterval = null;
+        function toggleTimer() {
+            if(timerInterval) { clearInterval(timerInterval); timerInterval = null; }
+            else {
+                timerInterval = setInterval(() => {
+                    timeLeft--;
+                    let m = Math.floor(timeLeft/60); let s = timeLeft % 60;
+                    document.getElementById('timer').innerText = `${m}:${s < 10 ? '0'+s : s}`;
+                    if(timeLeft <= 0) clearInterval(timerInterval);
+                }, 1000);
+            }
+        }
+
         auth.onAuthStateChanged(user => {
             currentUser = user;
-            document.getElementById('auth-indicator').style.background = user ? "#22c55e" : var(--danger);
             if (user) startVaultListener(user.uid);
         });
 
         function renderSites(snapshot) {
             const grid = document.getElementById('vault-grid');
             grid.innerHTML = '';
-            
             let first = true;
             snapshot.forEach(doc => {
                 const site = doc.data();
-                const id = doc.id;
-
-                // Update Hero with the most recent site
-                if (first) {
+                if(first) {
                     document.getElementById('hero-title').innerText = site.official_name;
                     document.getElementById('hero-desc').innerText = site.short_description;
-                    if(site.storage_url) document.getElementById('featured-portal').style.backgroundImage = `linear-gradient(rgba(30, 41, 59, 0.4), rgba(15, 23, 42, 0.95)), url('${site.storage_url}')`;
+                    if(site.storage_url) document.getElementById('featured-portal').style.backgroundImage = `linear-gradient(rgba(15,23,42,0.6), rgba(15,23,42,0.9)), url('${site.storage_url}')`;
                     first = false;
                 }
-
                 const card = document.createElement('div');
                 card.className = 'site-card';
-                let thumb = site.storage_url ? `background-image: url('${site.storage_url}');` : `background: linear-gradient(45deg, #0f172a, #1e293b);`;
-                
                 card.innerHTML = `
-                    <div class="card-actions">
-                        <button class="action-btn" onclick="toggleFav('${id}')">♥</button>
-                        <button class="action-btn" onclick="deleteSite('${id}', '${site.storage_url}')">×</button>
-                    </div>
-                    <div class="card-thumb" style="${thumb}">${site.storage_url ? '' : site.official_name.charAt(0)}</div>
-                    <div class="card-content">
-                        <a href="${site.primary_url}" target="_blank" class="card-title">${site.official_name}</a>
-                        <p class="card-desc">${site.short_description}</p>
+                    <div class="card-thumb" style="background-image: url('${site.storage_url || ''}')"></div>
+                    <div style="padding:10px">
+                        <a href="${site.primary_url}" target="_blank" style="color:white; text-decoration:none; font-weight:bold; font-size:0.9rem;">${site.official_name}</a>
+                        <p style="color:var(--text-dim); font-size:0.75rem; margin:5px 0;">${site.short_description}</p>
                     </div>
                 `;
                 grid.appendChild(card);
@@ -265,37 +236,25 @@
         async function handleInput() {
             const val = document.getElementById('site-input').value.trim();
             const gKey = localStorage.getItem('gemini_key');
-            if (!val || !gKey) return;
-            const status = document.getElementById('status-msg');
-            status.innerText = "Researching...";
-
+            if(!val || !gKey) return;
+            document.getElementById('status-msg').innerText = "Researching...";
             try {
                 const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${gKey}`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ contents: [{ parts: [{ text: `Research "${val}". Return ONLY JSON: {"official_name": "string", "primary_url": "string", "short_description": "max 20 words"}` }] }] })
+                    body: JSON.stringify({ contents: [{ parts: [{ text: `Research "${val}". Return JSON: {"official_name": "string", "primary_url": "string", "short_description": "max 20 words"}` }] }] })
                 });
                 const data = await res.json();
                 const cleanJson = JSON.parse(data.candidates[0].content.parts[0].text.match(/\{[\s\S]*\}/)[0]);
-                
-                status.innerText = "Capturing...";
                 const screenshotUrl = `https://api.microlink.io/?url=${encodeURIComponent(cleanJson.primary_url)}&screenshot=true&embed=screenshot.url`;
                 const blob = await (await fetch(screenshotUrl)).blob();
-                const storageRef = storage.ref().child(`thumbnails/${currentUser.uid}/${Date.now()}.png`);
-                await storageRef.put(blob);
-                const sUrl = await storageRef.getDownloadURL();
-
+                const ref = storage.ref().child(`thumbnails/${currentUser.uid}/${Date.now()}.png`);
+                await ref.put(blob);
+                const sUrl = await ref.getDownloadURL();
                 await db.collection("sites").add({ ...cleanJson, uid: currentUser.uid, storage_url: sUrl, timestamp: firebase.firestore.FieldValue.serverTimestamp() });
-                status.innerText = "";
+                document.getElementById('status-msg').innerText = "";
                 document.getElementById('site-input').value = '';
-            } catch (e) { status.innerText = "Error adding site."; }
-        }
-
-        async function deleteSite(id, url) {
-            if(confirm("Delete?")) {
-                await db.collection("sites").doc(id).delete();
-                if(url) storage.refFromURL(url).delete().catch(()=>{});
-            }
+            } catch (e) { document.getElementById('status-msg').innerText = "Error"; }
         }
 
         async function handleAuthClick() {
