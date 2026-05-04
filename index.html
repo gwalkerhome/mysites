@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>v1.8.5 | mysites - full utility</title>
+    <title>v1.8.6 | mysites - link editor</title>
     
     <script src="https://www.gstatic.com/firebasejs/10.12.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.1/firebase-auth-compat.js"></script>
@@ -31,6 +31,7 @@
             display: flex; height: 100vh; width: 100vw; overflow: hidden; 
         }
 
+        /* SIDEBAR */
         #sidebar { 
             width: var(--sidebar-w); background: var(--bg-color); 
             display: flex; flex-direction: column; align-items: center; 
@@ -44,8 +45,10 @@
         }
         .nav-icon:hover, .nav-icon.active { background: var(--accent); color: #000; }
 
+        /* VIEWPORT */
         #viewport { flex-grow: 1; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
 
+        /* TOP BAR */
         #top-bar { 
             height: var(--top-h); padding: 0 30px; display: flex; gap: 15px; align-items: center; 
             border-bottom: 1px solid var(--border); background: var(--bg-color); flex-shrink: 0;
@@ -60,10 +63,12 @@
             border-radius: 6px; text-decoration: none; color: var(--text-dim); font-size: 0.75rem; font-weight: bold;
         }
 
+        /* SCROLLABLE MAIN */
         #main-content { flex-grow: 1; overflow-y: auto; padding: 30px; }
 
         .dashboard-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 25px; margin-bottom: 40px; }
 
+        /* HERO AREA */
         #featured-portal { 
             min-height: 280px; border-radius: 24px; border: 1px solid var(--border);
             background: linear-gradient(rgba(15,23,42,0.7), rgba(15,23,42,0.95)), url('https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&q=80&w=1500');
@@ -76,11 +81,14 @@
         }
         .drop-bar input { background: transparent; border: none; color: white; flex: 1; outline: none; }
 
+        /* WIDGETS */
         .widget { background: var(--surface); border: 1px solid var(--border); border-radius: 15px; padding: 15px; margin-bottom: 15px; }
         #scratchpad { width: 100%; height: 110px; background: transparent; border: none; color: var(--text); resize: none; outline: none; font-size: 0.85rem; line-height: 1.4; }
         
+        /* VAULT GRID */
         #vault-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 25px; padding-bottom: 60px; }
         .site-card { background: var(--card-bg); border-radius: 16px; overflow: hidden; border: 1px solid var(--border); height: 260px; transition: 0.3s; position: relative; }
+        .site-card:hover { border-color: var(--accent); }
         .site-card:hover .card-actions { opacity: 1; }
         
         .card-thumb { height: 140px; background-size: cover; background-position: center; background-color: #020617; }
@@ -92,17 +100,17 @@
         .action-btn:hover { background: var(--accent); color: black; }
         .btn-del:hover { background: var(--danger); color: white; }
 
-        /* MODAL */
+        /* EDIT MODAL */
         #edit-modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 1000; align-items: center; justify-content: center; padding: 20px; }
-        .modal-content { background: var(--surface); width: 100%; max-width: 450px; border-radius: 20px; padding: 30px; border: 1px solid var(--border); }
+        .modal-content { background: var(--surface); width: 100%; max-width: 480px; border-radius: 20px; padding: 30px; border: 1px solid var(--border); box-shadow: 0 20px 50px rgba(0,0,0,0.5); }
         .modal-field { margin-bottom: 15px; }
-        .modal-field label { display: block; font-size: 0.75rem; color: var(--text-dim); margin-bottom: 5px; }
-        .modal-field input, .modal-field textarea { width: 100%; padding: 12px; border-radius: 8px; background: var(--bg-color); border: 1px solid var(--border); color: white; }
+        .modal-field label { display: block; font-size: 0.75rem; color: var(--accent); font-weight: bold; margin-bottom: 5px; text-transform: uppercase; letter-spacing: 0.5px; }
+        .modal-field input, .modal-field textarea { width: 100%; padding: 12px; border-radius: 8px; background: var(--bg-color); border: 1px solid var(--border); color: white; outline: none; font-family: inherit; }
+        .modal-field input:focus { border-color: var(--accent); }
 
         @media (max-width: 768px) {
             body { flex-direction: column; }
             #sidebar { width: 100%; height: 60px; flex-direction: row; order: 2; border-right: none; border-top: 1px solid var(--border); justify-content: space-around; padding: 0; }
-            #top-bar { flex-direction: column; height: auto; padding: 15px; }
             .dashboard-grid { grid-template-columns: 1fr; }
         }
     </style>
@@ -133,10 +141,10 @@
         <main id="main-content">
             <div class="dashboard-grid">
                 <section id="featured-portal">
-                    <h2 id="hero-title" style="margin:0; font-size: 2rem;">Welcome to the Vault</h2>
-                    <p id="hero-desc" style="color:var(--text-dim); margin:10px 0 20px 0;">Sign in to unlock your sites.</p>
+                    <h2 id="hero-title" style="margin:0; font-size: 2rem;">Welcome</h2>
+                    <p id="hero-desc" style="color:var(--text-dim); margin:10px 0 20px 0;">Sign in to load your archive.</p>
                     <div class="drop-bar">
-                        <input type="text" id="site-input" placeholder="Drop URL here...">
+                        <input type="text" id="site-input" placeholder="Paste URL here...">
                         <button onclick="handleInput()" style="background:var(--accent); border:none; padding:8px 20px; border-radius:8px; cursor:pointer; font-weight:bold;">Save</button>
                     </div>
                 </section>
@@ -144,7 +152,7 @@
                 <div class="utility-rail">
                     <div class="widget">
                         <div style="font-size:0.7rem; color:var(--accent); font-weight:bold; margin-bottom:8px;">SCRATCHPAD</div>
-                        <textarea id="scratchpad" placeholder="Jot things down..."></textarea>
+                        <textarea id="scratchpad" placeholder="Quick notes..."></textarea>
                     </div>
                     <div class="widget" style="display:flex; justify-content:space-between; align-items:center;">
                         <span style="font-size:0.75rem; color:var(--text-dim); font-weight:bold;">TIMER</span>
@@ -159,13 +167,14 @@
 
     <div id="edit-modal">
         <div class="modal-content">
-            <h2 style="margin-top: 0; font-size: 1.2rem;">Edit Site</h2>
-            <div class="modal-field"><label>Name</label><input type="text" id="edit-name"></div>
+            <h2 style="margin-top: 0; font-size: 1.2rem; color: white; margin-bottom: 20px;">Edit Entry Details</h2>
+            <div class="modal-field"><label>Site Name</label><input type="text" id="edit-name"></div>
+            <div class="modal-field"><label>Primary URL</label><input type="text" id="edit-url"></div>
             <div class="modal-field"><label>Description</label><textarea id="edit-desc" rows="3"></textarea></div>
-            <div class="modal-field"><label>Change Image</label><input type="file" id="edit-file" accept="image/*"></div>
-            <div style="display: flex; gap: 10px;">
-                <button onclick="saveChanges()" style="flex:1; background:var(--accent); border:none; padding:10px; border-radius:8px; cursor:pointer; font-weight:bold;">Save Changes</button>
-                <button onclick="closeModal()" style="flex:1; background:var(--surface); border:1px solid var(--border); color:white; padding:10px; border-radius:8px; cursor:pointer;">Cancel</button>
+            <div class="modal-field"><label>New Thumbnail</label><input type="file" id="edit-file" accept="image/*"></div>
+            <div style="display: flex; gap: 10px; margin-top: 10px;">
+                <button onclick="saveChanges()" style="flex:1; background:var(--accent); border:none; padding:12px; border-radius:8px; cursor:pointer; font-weight:bold;">Update Vault</button>
+                <button onclick="closeModal()" style="flex:1; background:transparent; border:1px solid var(--border); color:white; padding:12px; border-radius:8px; cursor:pointer;">Discard</button>
             </div>
         </div>
     </div>
@@ -242,16 +251,22 @@
             unsubscribe = sitesRef.orderBy("timestamp", "desc").onSnapshot(snapshot => renderSites(snapshot), e => sitesRef.onSnapshot(renderSites));
         }
 
+        // UPDATED MODAL FILLER
         function openEditModal(id, data) {
             currentEditId = id;
-            document.getElementById('edit-name').value = data.official_name;
-            document.getElementById('edit-desc').value = data.short_description;
+            document.getElementById('edit-name').value = data.official_name || "";
+            document.getElementById('edit-url').value = data.primary_url || "";
+            document.getElementById('edit-desc').value = data.short_description || "";
             document.getElementById('edit-modal').style.display = 'flex';
         }
         function closeModal() { document.getElementById('edit-modal').style.display = 'none'; }
 
         async function saveChanges() {
-            const up = { official_name: document.getElementById('edit-name').value, short_description: document.getElementById('edit-desc').value };
+            const up = { 
+                official_name: document.getElementById('edit-name').value, 
+                primary_url: document.getElementById('edit-url').value,
+                short_description: document.getElementById('edit-desc').value 
+            };
             const file = document.getElementById('edit-file').files[0];
             try {
                 if(file) {
@@ -261,11 +276,11 @@
                 }
                 await db.collection("sites").doc(currentEditId).update(up);
                 closeModal();
-            } catch (e) { alert("Error"); }
+            } catch (e) { alert("Update failed."); }
         }
 
         async function deleteSite(id, url) {
-            if(confirm("Delete?")) { await db.collection("sites").doc(id).delete(); if(url) storage.refFromURL(url).delete().catch(()=>{}); }
+            if(confirm("Delete site from vault?")) { await db.collection("sites").doc(id).delete(); if(url) storage.refFromURL(url).delete().catch(()=>{}); }
         }
 
         async function handleInput() {
@@ -291,7 +306,7 @@
                 await db.collection("sites").add({ ...cleanJson, uid: currentUser.uid, storage_url: sUrl, timestamp: firebase.firestore.FieldValue.serverTimestamp() });
                 status.innerText = "";
                 document.getElementById('site-input').value = '';
-            } catch (e) { status.innerText = "Error"; }
+            } catch (e) { status.innerText = "Error adding site."; }
         }
 
         async function handleAuthClick() {
