@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>v1.8.2 | mysites - visibility fix</title>
+    <title>v1.8.4 | mysites - command center</title>
     
     <script src="https://www.gstatic.com/firebasejs/10.12.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.1/firebase-auth-compat.js"></script>
@@ -19,6 +19,7 @@
             --text: #f8fafc;
             --text-dim: #94a3b8;
             --border: #334155;
+            --sidebar-w: 70px;
             --top-h: 70px;
         }
 
@@ -29,12 +30,12 @@
             display: flex; height: 100vh; width: 100vw; overflow: hidden; 
         }
 
+        /* SIDEBAR */
         #sidebar { 
-            width: 70px; background: var(--bg-color); 
+            width: var(--sidebar-w); background: var(--bg-color); 
             display: flex; flex-direction: column; align-items: center; 
             padding: 20px 0; border-right: 1px solid var(--border); flex-shrink: 0;
         }
-
         .nav-icon { 
             width: 44px; height: 44px; display: flex; align-items: center; justify-content: center;
             border-radius: 12px; margin-bottom: 15px; cursor: pointer; text-decoration: none;
@@ -43,63 +44,58 @@
         }
         .nav-icon:hover, .nav-icon.active { background: var(--accent); color: #000; }
 
-        #viewport { flex-grow: 1; display: flex; flex-direction: column; height: 100vh; }
+        /* VIEWPORT */
+        #viewport { flex-grow: 1; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
 
+        /* INTELLIGENCE ROW (Top Bar) */
         #top-bar { 
             height: var(--top-h); padding: 0 30px; display: flex; gap: 15px; align-items: center; 
             border-bottom: 1px solid var(--border); background: var(--bg-color); flex-shrink: 0;
         }
         .search-box { 
             flex: 1; background: var(--surface); border: 1px solid var(--border);
-            padding: 10px 15px; border-radius: 8px; color: white; outline: none;
+            padding: 10px 15px; border-radius: 8px; color: white; outline: none; height: 42px;
         }
-
-        /* SCROLLABLE AREA */
-        #main-content { 
-            flex-grow: 1; 
-            overflow-y: auto; 
-            padding: 30px; 
+        .apparatus { display: flex; gap: 8px; }
+        .app-link { 
+            padding: 8px 12px; background: var(--surface); border: 1px solid var(--border);
+            border-radius: 6px; text-decoration: none; color: var(--text-dim); font-size: 0.75rem; font-weight: bold;
         }
+        .app-link:hover { color: var(--accent); border-color: var(--accent); }
 
-        .dashboard-grid { 
-            display: grid; grid-template-columns: 2fr 1fr; gap: 25px; margin-bottom: 40px;
-        }
+        /* SCROLLABLE CONTENT */
+        #main-content { flex-grow: 1; overflow-y: auto; padding: 30px; }
 
+        .dashboard-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 25px; margin-bottom: 40px; }
+
+        /* HERO */
         #featured-portal { 
-            height: 280px; border-radius: 20px; border: 1px solid var(--border);
-            background: linear-gradient(rgba(15,23,42,0.8), rgba(15,23,42,0.95)), url('https://images.unsplash.com/photo-1614850523296-d8c1af93d400?auto=format&fit=crop&q=80&w=1000');
+            min-height: 280px; border-radius: 24px; border: 1px solid var(--border);
+            background: linear-gradient(rgba(15,23,42,0.7), rgba(15,23,42,0.95)), url('https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&q=80&w=1500');
             background-size: cover; background-position: center;
             display: flex; flex-direction: column; justify-content: center; padding: 40px;
         }
-
         .drop-bar { 
             margin-top: 20px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
-            padding: 10px; border-radius: 12px; display: flex; gap: 10px;
+            backdrop-filter: blur(10px); padding: 10px; border-radius: 12px; display: flex; gap: 10px;
         }
         .drop-bar input { background: transparent; border: none; color: white; flex: 1; outline: none; }
 
+        /* UTILITY WIDGETS */
         .widget { background: var(--surface); border: 1px solid var(--border); border-radius: 15px; padding: 15px; margin-bottom: 15px; }
-        #scratchpad { width: 100%; height: 120px; background: transparent; border: none; color: var(--text); resize: none; outline: none; font-size: 0.9rem; }
-
-        /* THE FIX: VAULT GRID */
-        #vault-grid { 
-            display: grid; 
-            grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); 
-            gap: 25px; 
-            min-height: 400px; /* Force visibility */
-            padding-bottom: 100px;
-        }
-
-        .site-card { 
-            background: var(--card-bg); border-radius: 16px; overflow: hidden; 
-            border: 1px solid var(--border); height: 260px;
-        }
-        .card-thumb { height: 140px; background-size: cover; background-position: center; background-color: #020617; }
+        #scratchpad { width: 100%; height: 110px; background: transparent; border: none; color: var(--text); resize: none; outline: none; font-size: 0.85rem; line-height: 1.4; }
         
+        /* VAULT GRID */
+        #vault-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 25px; padding-bottom: 60px; }
+        .site-card { background: var(--card-bg); border-radius: 16px; overflow: hidden; border: 1px solid var(--border); height: 260px; transition: 0.3s; }
+        .card-thumb { height: 140px; background-size: cover; background-position: center; background-color: #020617; }
+        .card-content { padding: 15px; }
+        .card-title { font-weight: 700; color: white; text-decoration: none; display: block; margin-bottom: 5px; }
+
         @media (max-width: 768px) {
             body { flex-direction: column; }
-            #sidebar { width: 100%; height: 60px; flex-direction: row; order: 2; border-top: 1px solid var(--border); }
-            #viewport { height: calc(100vh - 60px); }
+            #sidebar { width: 100%; height: 60px; flex-direction: row; order: 2; border-right: none; border-top: 1px solid var(--border); justify-content: space-around; padding: 0; }
+            #top-bar { flex-direction: column; height: auto; padding: 15px; }
             .dashboard-grid { grid-template-columns: 1fr; }
         }
     </style>
@@ -107,7 +103,7 @@
 <body>
 
     <nav id="sidebar">
-        <div style="color:var(--accent); font-weight:900; margin-bottom:20px;">MS</div>
+        <div style="color:var(--accent); font-weight:900; margin-bottom:20px; font-size:1.2rem;">MS</div>
         <a href="index.html" class="nav-icon active">⌂</a>
         <a href="#" class="nav-icon">♥</a>
         <a href="#" class="nav-icon">✨</a>
@@ -120,36 +116,38 @@
             <form action="https://www.google.com/search" method="GET" style="flex:1; display:flex;">
                 <input type="text" name="q" class="search-box" placeholder="Google Search...">
             </form>
-            <input type="text" id="gemini-chat" class="search-box" style="border-color: var(--accent);" placeholder="Ask Gemini AI...">
+            <input type="text" id="gemini-chat" class="search-box" style="border-color: var(--accent); flex: 1;" placeholder="Ask Gemini AI...">
+            <div class="apparatus">
+                <a href="https://github.com" target="_blank" class="app-link">GitHub</a>
+                <a href="https://firebase.google.com" target="_blank" class="app-link">Firebase</a>
+            </div>
         </header>
 
         <main id="main-content">
             <div class="dashboard-grid">
                 <section id="featured-portal">
-                    <h2 id="hero-title" style="margin:0">Vault Initializing...</h2>
-                    <p id="hero-desc" style="color:var(--text-dim); margin:10px 0 20px 0;">Sign in to view your sites.</p>
+                    <h2 id="hero-title" style="margin:0; font-size: 2rem;">Welcome to the Vault</h2>
+                    <p id="hero-desc" style="color:var(--text-dim); margin:10px 0 20px 0;">Please login to see your sites.</p>
                     <div class="drop-bar">
-                        <input type="text" id="site-input" placeholder="Paste URL here...">
-                        <button onclick="handleInput()" style="background:var(--accent); border:none; padding:8px 20px; border-radius:8px; cursor:pointer;">Save</button>
+                        <input type="text" id="site-input" placeholder="Enter URL or Site Name...">
+                        <button onclick="handleInput()" style="background:var(--accent); border:none; padding:8px 20px; border-radius:8px; cursor:pointer; font-weight:bold;">Save</button>
                     </div>
                 </section>
 
                 <div class="utility-rail">
                     <div class="widget">
-                        <div style="font-size:0.7rem; color:var(--accent); margin-bottom:10px;">SCRATCHPAD</div>
-                        <textarea id="scratchpad"></textarea>
+                        <div style="font-size:0.7rem; color:var(--accent); font-weight:bold; margin-bottom:8px;">SCRATCHPAD</div>
+                        <textarea id="scratchpad" placeholder="Jot things down..."></textarea>
                     </div>
                     <div class="widget" style="display:flex; justify-content:space-between; align-items:center;">
-                        <span style="font-size:0.8rem;">TIMER</span>
-                        <div id="timer" style="font-weight:bold; color:var(--accent); cursor:pointer;" onclick="toggleTimer()">25:00</div>
+                        <span style="font-size:0.75rem; color:var(--text-dim); font-weight:bold;">TIMER</span>
+                        <div id="timer" style="font-weight:bold; color:var(--accent); font-size:1.3rem; cursor:pointer;" onclick="toggleTimer()">25:00</div>
                     </div>
                 </div>
             </div>
 
-            <h3 style="margin-bottom: 20px;">Library</h3>
-            <div id="vault-grid">
-                <p style="color:var(--text-dim)">Checking for sites...</p>
-            </div>
+            <div id="status-msg" style="color:var(--accent); font-size:0.8rem; margin-bottom:15px;"></div>
+            <div id="vault-grid"></div>
         </main>
     </div>
 
@@ -168,6 +166,7 @@
         const storage = firebase.storage();
 
         let currentUser = null;
+        let unsubscribe = null;
 
         // SCRATCHPAD
         const pad = document.getElementById('scratchpad');
@@ -190,15 +189,11 @@
         auth.onAuthStateChanged(user => {
             currentUser = user;
             if (user) startVaultListener(user.uid);
-            else document.getElementById('vault-grid').innerHTML = '<p style="color:var(--text-dim)">Please login to see your sites.</p>';
+            else document.getElementById('vault-grid').innerHTML = '<p style="color:var(--text-dim)">Login required.</p>';
         });
 
         function renderSites(snapshot) {
             const grid = document.getElementById('vault-grid');
-            if (snapshot.empty) {
-                grid.innerHTML = '<p style="color:var(--text-dim)">No sites found. Add one above!</p>';
-                return;
-            }
             grid.innerHTML = '';
             let first = true;
             snapshot.forEach(doc => {
@@ -206,16 +201,16 @@
                 if(first) {
                     document.getElementById('hero-title').innerText = site.official_name;
                     document.getElementById('hero-desc').innerText = site.short_description;
-                    if(site.storage_url) document.getElementById('featured-portal').style.backgroundImage = `linear-gradient(rgba(15,23,42,0.8), rgba(15,23,42,0.95)), url('${site.storage_url}')`;
+                    if(site.storage_url) document.getElementById('featured-portal').style.backgroundImage = `linear-gradient(rgba(15,23,42,0.7), rgba(15,23,42,0.95)), url('${site.storage_url}')`;
                     first = false;
                 }
                 const card = document.createElement('div');
                 card.className = 'site-card';
                 card.innerHTML = `
                     <div class="card-thumb" style="background-image: url('${site.storage_url || ''}')"></div>
-                    <div style="padding:15px">
-                        <a href="${site.primary_url}" target="_blank" style="color:white; text-decoration:none; font-weight:bold; font-size:0.9rem;">${site.official_name}</a>
-                        <p style="color:var(--text-dim); font-size:0.75rem; margin-top:5px;">${site.short_description}</p>
+                    <div class="card-content">
+                        <a href="${site.primary_url}" target="_blank" class="card-title">${site.official_name}</a>
+                        <p style="font-size:0.8rem; color:var(--text-dim); margin:0;">${site.short_description}</p>
                     </div>
                 `;
                 grid.appendChild(card);
@@ -223,13 +218,25 @@
         }
 
         function startVaultListener(uid) {
-            db.collection("sites").where("uid", "==", uid).orderBy("timestamp", "desc").onSnapshot(renderSites);
+            if (unsubscribe) unsubscribe();
+            const sitesRef = db.collection("sites").where("uid", "==", uid);
+            
+            // RESTORED WATERFALL LISTENER FROM v1.6.1
+            unsubscribe = sitesRef.orderBy("timestamp", "desc").onSnapshot(
+                snapshot => renderSites(snapshot),
+                error => {
+                    console.warn("Index missing, showing unsorted list.");
+                    sitesRef.onSnapshot(renderSites);
+                }
+            );
         }
 
         async function handleInput() {
             const val = document.getElementById('site-input').value.trim();
             const gKey = localStorage.getItem('gemini_key');
             if(!val || !gKey) return;
+            const status = document.getElementById('status-msg');
+            status.innerText = "Researching...";
             try {
                 const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${gKey}`, {
                     method: 'POST',
@@ -238,19 +245,24 @@
                 });
                 const data = await res.json();
                 const cleanJson = JSON.parse(data.candidates[0].content.parts[0].text.match(/\{[\s\S]*\}/)[0]);
+                status.innerText = "Capturing...";
                 const screenshotUrl = `https://api.microlink.io/?url=${encodeURIComponent(cleanJson.primary_url)}&screenshot=true&embed=screenshot.url`;
                 const blob = await (await fetch(screenshotUrl)).blob();
                 const ref = storage.ref().child(`thumbnails/${currentUser.uid}/${Date.now()}.png`);
                 await ref.put(blob);
                 const sUrl = await ref.getDownloadURL();
                 await db.collection("sites").add({ ...cleanJson, uid: currentUser.uid, storage_url: sUrl, timestamp: firebase.firestore.FieldValue.serverTimestamp() });
+                status.innerText = "Saved!";
                 document.getElementById('site-input').value = '';
-            } catch (e) { alert("Error adding site"); }
+            } catch (e) { status.innerText = "Error adding site."; }
         }
 
         async function handleAuthClick() {
-            const email = prompt("Email:"); const pass = prompt("Password:");
-            if (email && pass) auth.signInWithEmailAndPassword(email, pass).catch(() => auth.createUserWithEmailAndPassword(email, pass));
+            if (currentUser) { await auth.signOut(); }
+            else {
+                const email = prompt("Email:"); const pass = prompt("Password:");
+                if (email && pass) auth.signInWithEmailAndPassword(email, pass).catch(() => auth.createUserWithEmailAndPassword(email, pass));
+            }
         }
     </script>
 </body>
