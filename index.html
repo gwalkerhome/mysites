@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>v1.9.2 | mysites - intelligence & auth stability</title>
+    <title>v1.8.8 | mysites - auto-tagging</title>
     
     <script src="https://www.gstatic.com/firebasejs/10.12.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.1/firebase-auth-compat.js"></script>
@@ -31,43 +31,35 @@
         .nav-icon { width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; border-radius: 12px; margin-bottom: 15px; cursor: pointer; text-decoration: none; background: var(--surface); color: var(--text-dim); border: 1px solid var(--border); font-size: 1.2rem; transition: 0.2s; }
         .nav-icon:hover, .nav-icon.active { background: var(--accent); color: #000; }
 
-        #viewport { flex-grow: 1; display: flex; flex-direction: column; height: 100vh; overflow: hidden; position: relative; }
+        #viewport { flex-grow: 1; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
         #top-bar { height: var(--top-h); padding: 0 30px; display: flex; gap: 15px; align-items: center; border-bottom: 1px solid var(--border); background: var(--bg-color); flex-shrink: 0; }
         .search-box { flex: 1; background: var(--surface); border: 1px solid var(--border); padding: 10px 15px; border-radius: 8px; color: white; outline: none; height: 42px; }
 
         #main-content { flex-grow: 1; overflow-y: auto; padding: 30px; }
-        .dashboard-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 25px; margin-bottom: 20px; }
+        .dashboard-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 25px; margin-bottom: 40px; }
 
-        #featured-portal { min-height: 250px; border-radius: 24px; border: 1px solid var(--border); background: linear-gradient(rgba(15,23,42,0.7), rgba(15,23,42,0.95)), url('https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&q=80&w=1500'); background-size: cover; background-position: center; display: flex; flex-direction: column; justify-content: center; padding: 40px; }
+        #featured-portal { min-height: 280px; border-radius: 24px; border: 1px solid var(--border); background: linear-gradient(rgba(15,23,42,0.7), rgba(15,23,42,0.95)), url('https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&q=80&w=1500'); background-size: cover; background-position: center; display: flex; flex-direction: column; justify-content: center; padding: 40px; }
         .drop-bar { margin-top: 20px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); backdrop-filter: blur(10px); padding: 10px; border-radius: 12px; display: flex; gap: 10px; }
         .drop-bar input { background: transparent; border: none; color: white; flex: 1; outline: none; }
 
-        #filter-bar { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 15px; margin-bottom: 20px; border-bottom: 1px solid var(--border); }
-        .filter-chip { padding: 6px 14px; background: var(--surface); border: 1px solid var(--border); border-radius: 20px; font-size: 0.75rem; color: var(--text-dim); cursor: pointer; white-space: nowrap; transition: 0.2s; }
-        .filter-chip.active { background: var(--accent); color: black; border-color: var(--accent); font-weight: bold; }
-
-        .widget { background: var(--surface); border: 1px solid var(--border); border-radius: 15px; padding: 15px; }
-        #scratchpad { width: 100%; height: 120px; background: transparent; border: none; color: var(--text); resize: none; outline: none; font-size: 0.85rem; line-height: 1.4; }
+        .widget { background: var(--surface); border: 1px solid var(--border); border-radius: 15px; padding: 15px; margin-bottom: 15px; }
+        #scratchpad { width: 100%; height: 110px; background: transparent; border: none; color: var(--text); resize: none; outline: none; font-size: 0.85rem; line-height: 1.4; }
         
-        #vault-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 25px; padding-bottom: 80px; }
+        #vault-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 25px; padding-bottom: 60px; }
         .site-card { background: var(--card-bg); border-radius: 16px; overflow: hidden; border: 1px solid var(--border); height: 320px; transition: 0.3s; position: relative; }
-        .site-card:hover { border-color: var(--accent); transform: translateY(-3px); }
+        .site-card:hover { border-color: var(--accent); }
         .site-card:hover .card-actions { opacity: 1; }
         
-        .card-thumb { height: 140px; background-size: cover; background-position: center; background-color: #020617; position: relative; }
+        .card-thumb { height: 140px; background-size: cover; background-position: center; background-color: #020617; }
         .card-content { padding: 15px; display: flex; flex-direction: column; gap: 8px; }
         .card-title { font-weight: 700; color: white; text-decoration: none; display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         
-        .tag-pill { background: rgba(56, 189, 248, 0.1); color: var(--accent); font-size: 0.6rem; padding: 3px 8px; border-radius: 4px; border: 1px solid rgba(56, 189, 248, 0.2); font-weight: bold; text-transform: uppercase; }
+        .tag-pill { background: rgba(56, 189, 248, 0.1); color: var(--accent); font-size: 0.65rem; padding: 3px 8px; border-radius: 4px; border: 1px solid rgba(56, 189, 248, 0.2); font-weight: bold; text-transform: uppercase; }
         .tag-container { display: flex; flex-wrap: wrap; gap: 4px; margin-top: auto; }
 
-        .card-actions { position: absolute; top: 10px; right: 10px; display: flex; gap: 6px; opacity: 0; transition: 0.2s; z-index: 10; }
+        .card-actions { position: absolute; top: 10px; right: 10px; display: flex; gap: 6px; opacity: 0; transition: 0.2s; }
         .action-btn { width: 30px; height: 30px; background: rgba(0,0,0,0.8); border: 1px solid var(--border); color: white; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 0.8rem; }
         .action-btn:hover { background: var(--accent); color: black; }
-
-        #user-badge { position: absolute; bottom: 15px; left: 15px; background: var(--surface); border: 1px solid var(--border); padding: 5px 12px; border-radius: 20px; font-size: 0.65rem; color: var(--text-dim); display: flex; align-items: center; gap: 6px; pointer-events: none; z-index: 5; }
-        .status-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--text-dim); }
-        .status-dot.online { background: #10b981; box-shadow: 0 0 5px #10b981; }
 
         #edit-modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 1000; align-items: center; justify-content: center; padding: 20px; }
         .modal-content { background: var(--surface); width: 100%; max-width: 480px; border-radius: 20px; padding: 30px; border: 1px solid var(--border); }
@@ -82,8 +74,7 @@
         <div style="color:var(--accent); font-weight:900; margin-bottom:20px; font-size:1.2rem;">MS</div>
         <a href="index.html" class="nav-icon active">⌂</a>
         <a href="apisettings.html" class="nav-icon">⚙</a>
-        <button class="nav-icon" onclick="handleAuthClick()" id="auth-btn" style="margin-top:auto;">⊕</button>
-        <button class="nav-icon" onclick="location.reload()" style="font-size: 1rem;">↻</button>
+        <button class="nav-icon" onclick="handleAuthClick()" style="margin-top:auto;">⎋</button>
     </nav>
 
     <div id="viewport">
@@ -97,13 +88,14 @@
         <main id="main-content">
             <div class="dashboard-grid">
                 <section id="featured-portal">
-                    <h2 id="hero-title" style="margin:0; font-size: 2.2rem;">Vault</h2>
-                    <p id="hero-desc" style="color:var(--text-dim); margin:10px 0 20px 0;">Intelligence-driven site archive.</p>
+                    <h2 id="hero-title" style="margin:0; font-size: 2rem;">Vault</h2>
+                    <p id="hero-desc" style="color:var(--text-dim); margin:10px 0 20px 0;">Intelligence-driven archive.</p>
                     <div class="drop-bar">
                         <input type="text" id="site-input" placeholder="Paste URL here...">
-                        <button onclick="handleInput()" id="add-btn" style="background:var(--accent); border:none; padding:8px 20px; border-radius:8px; cursor:pointer; font-weight:bold;">Save</button>
+                        <button onclick="handleInput()" style="background:var(--accent); border:none; padding:8px 20px; border-radius:8px; cursor:pointer; font-weight:bold;">Save</button>
                     </div>
                 </section>
+
                 <div class="utility-rail">
                     <div class="widget">
                         <div style="font-size:0.7rem; color:var(--accent); font-weight:bold; margin-bottom:8px;">SCRATCHPAD</div>
@@ -111,19 +103,9 @@
                     </div>
                 </div>
             </div>
-
-            <div id="filter-bar">
-                <div class="filter-chip active" onclick="setFilter('all')">All Sites</div>
-            </div>
-
-            <div id="status-msg" style="color:var(--accent); font-size:0.8rem; margin-bottom:15px; font-weight:bold; min-height: 1.2rem;"></div>
+            <div id="status-msg" style="color:var(--accent); font-size:0.8rem; margin-bottom:15px;"></div>
             <div id="vault-grid"></div>
         </main>
-
-        <div id="user-badge">
-            <div class="status-dot" id="status-dot"></div>
-            <span id="user-display">Not Logged In</span>
-        </div>
     </div>
 
     <div id="edit-modal">
@@ -131,7 +113,7 @@
             <h2 style="margin-top:0; font-size:1.2rem; color:white; margin-bottom:20px;">Refine Entry</h2>
             <div class="modal-field"><label>Name</label><input type="text" id="edit-name"></div>
             <div class="modal-field"><label>Link</label><input type="text" id="edit-url"></div>
-            <div class="modal-field"><label>Tags (Comma separated)</label><input type="text" id="edit-tags"></div>
+            <div class="modal-field"><label>Tags (Categorize)</label><input type="text" id="edit-tags"></div>
             <div class="modal-field"><label>Notes</label><textarea id="edit-desc" rows="2"></textarea></div>
             <div style="display:flex; gap:10px; margin-top:10px;">
                 <button onclick="saveChanges()" style="flex:1; background:var(--accent); border:none; padding:12px; border-radius:8px; cursor:pointer; font-weight:bold;">Update</button>
@@ -157,71 +139,33 @@
         let currentUser = null;
         let currentEditId = null;
         let unsubscribe = null;
-        let activeFilter = 'all';
-        let allSites = [];
 
         auth.onAuthStateChanged(user => {
-            const btn = document.getElementById('auth-btn');
-            const grid = document.getElementById('vault-grid');
-            const userDisplay = document.getElementById('user-display');
-            const statusDot = document.getElementById('status-dot');
-
-            if (user) {
-                currentUser = user;
-                btn.innerText = "⎋";
-                userDisplay.innerText = "Logged in as: " + user.email;
-                statusDot.className = "status-dot online";
-                startVaultListener(user.uid);
-            } else {
-                currentUser = null;
-                btn.innerText = "⊕";
-                userDisplay.innerText = "Not Logged In";
-                statusDot.className = "status-dot";
-                allSites = [];
-                renderSites();
-                grid.innerHTML = '<p style="color:var(--text-dim)">Vault locked. Please click ⊕ to login.</p>';
-            }
+            currentUser = user;
+            if (user) startVaultListener(user.uid);
+            else document.getElementById('vault-grid').innerHTML = '<p style="color:var(--text-dim)">Login required.</p>';
         });
 
-        function renderSites() {
+        function renderSites(snapshot) {
             const grid = document.getElementById('vault-grid');
-            const filterBar = document.getElementById('filter-bar');
-            if(!currentUser) return;
-
             grid.innerHTML = '';
-            const tags = new Set();
-            allSites.forEach(s => (s.tags || []).forEach(t => tags.add(t)));
-            
-            filterBar.innerHTML = `<div class="filter-chip ${activeFilter === 'all' ? 'active' : ''}" onclick="setFilter('all')">All Sites</div>`;
-            Array.from(tags).sort().forEach(tag => {
-                const chip = document.createElement('div');
-                chip.className = `filter-chip ${activeFilter === tag ? 'active' : ''}`;
-                chip.innerText = tag;
-                chip.onclick = () => setFilter(tag);
-                filterBar.appendChild(chip);
-            });
-
-            const filtered = activeFilter === 'all' ? allSites : allSites.filter(s => (s.tags || []).includes(activeFilter));
-
-            if(filtered.length === 0 && allSites.length > 0) {
-                grid.innerHTML = '<p style="color:var(--text-dim)">No matching sites in this category.</p>';
-                return;
-            }
-
-            filtered.forEach(site => {
+            snapshot.forEach(doc => {
+                const site = doc.data();
+                const id = doc.id;
                 const card = document.createElement('div');
                 card.className = 'site-card';
-                const tagHtml = (site.tags || []).map(t => `<span class="tag-pill">${t}</span>`).join('');
                 
+                const tagHtml = (site.tags || []).map(t => `<span class="tag-pill">${t}</span>`).join('');
+
                 card.innerHTML = `
                     <div class="card-actions">
-                        <button class="action-btn" onclick='openEditModal("${site.id}", ${JSON.stringify(site).replace(/'/g, "&apos;")})'>✎</button>
-                        <button class="action-btn" onclick="deleteSite('${site.id}', '${site.storage_url}')">×</button>
+                        <button class="action-btn" onclick='openEditModal("${id}", ${JSON.stringify(site).replace(/'/g, "&apos;")})'>✎</button>
+                        <button class="action-btn" onclick="deleteSite('${id}', '${site.storage_url}')">×</button>
                     </div>
-                    <div class="card-thumb" style="background-image: url('${site.storage_url || 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=400'}')"></div>
+                    <div class="card-thumb" style="background-image: url('${site.storage_url || ''}')"></div>
                     <div class="card-content">
                         <a href="${site.primary_url}" target="_blank" class="card-title">${site.official_name}</a>
-                        <p style="font-size:0.7rem; color:var(--text-dim); margin:0;">${site.short_description}</p>
+                        <p style="font-size:0.75rem; color:var(--text-dim); margin:0;">${site.short_description}</p>
                         <div class="tag-container">${tagHtml}</div>
                     </div>
                 `;
@@ -229,64 +173,10 @@
             });
         }
 
-        function setFilter(tag) { activeFilter = tag; renderSites(); }
-
         function startVaultListener(uid) {
             if (unsubscribe) unsubscribe();
-            // Added check to ensure UID exists before calling listener
-            if(!uid) return;
-            
-            const statusMsg = document.getElementById('status-msg');
-            
-            unsubscribe = db.collection("sites").where("uid", "==", uid).orderBy("timestamp", "desc")
-                .onSnapshot(snapshot => {
-                    allSites = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                    statusMsg.innerText = "";
-                    renderSites();
-                }, err => {
-                    console.error(err);
-                    if(err.code === "permission-denied") {
-                        statusMsg.innerText = "Database Access Issue: Re-authenticating...";
-                        // Re-trigger auth check if permission is denied
-                        auth.currentUser.getIdToken(true);
-                    }
-                });
-        }
-
-        async function handleInput() {
-            const urlInput = document.getElementById('site-input');
-            const val = urlInput.value.trim();
-            const gKey = localStorage.getItem('gemini_key');
-            if(!val || !gKey || !currentUser) return;
-
-            const status = document.getElementById('status-msg');
-            const isDup = allSites.some(s => s.primary_url.toLowerCase().includes(val.toLowerCase()));
-            if(isDup) { status.innerText = "Site already exists."; return; }
-
-            status.innerText = "AI Researching...";
-            try {
-                const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${gKey}`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ contents: [{ parts: [{ text: `Research "${val}". Return JSON: {"official_name": "string", "primary_url": "string", "short_description": "max 20 words", "tags": ["tag1", "tag2", "tag3"]}` }] }] })
-                });
-                const data = await res.json();
-                const cleanJson = JSON.parse(data.candidates[0].content.parts[0].text.match(/\{[\s\S]*\}/)[0]);
-                
-                status.innerText = "Generating thumbnail...";
-                let sUrl = "";
-                try {
-                    const screenshotUrl = `https://api.microlink.io/?url=${encodeURIComponent(cleanJson.primary_url)}&screenshot=true&embed=screenshot.url`;
-                    const blob = await (await fetch(screenshotUrl)).blob();
-                    const ref = storage.ref().child(`thumbnails/${currentUser.uid}/${Date.now()}.png`);
-                    await ref.put(blob);
-                    sUrl = await ref.getDownloadURL();
-                } catch (err) { sUrl = ""; }
-
-                await db.collection("sites").add({ ...cleanJson, uid: currentUser.uid, storage_url: sUrl, timestamp: firebase.firestore.FieldValue.serverTimestamp() });
-                status.innerText = "";
-                urlInput.value = '';
-            } catch (e) { status.innerText = "Error adding site."; }
+            const sitesRef = db.collection("sites").where("uid", "==", uid);
+            unsubscribe = sitesRef.orderBy("timestamp", "desc").onSnapshot(snapshot => renderSites(snapshot), e => sitesRef.onSnapshot(renderSites));
         }
 
         function openEditModal(id, data) {
@@ -314,29 +204,42 @@
             } catch (e) { alert("Save error."); }
         }
 
+        async function handleInput() {
+            const val = document.getElementById('site-input').value.trim();
+            const gKey = localStorage.getItem('gemini_key');
+            if(!val || !gKey) return;
+            const status = document.getElementById('status-msg');
+            status.innerText = "Researching & Tagging...";
+            try {
+                // Gemini call now asks for tags
+                const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${gKey}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ contents: [{ parts: [{ text: `Research "${val}". Return JSON: {"official_name": "string", "primary_url": "string", "short_description": "max 20 words", "tags": ["tag1", "tag2", "tag3"]}` }] }] })
+                });
+                const data = await res.json();
+                const cleanJson = JSON.parse(data.candidates[0].content.parts[0].text.match(/\{[\s\S]*\}/)[0]);
+                
+                status.innerText = "Generating Preview...";
+                const screenshotUrl = `https://api.microlink.io/?url=${encodeURIComponent(cleanJson.primary_url)}&screenshot=true&embed=screenshot.url`;
+                const blob = await (await fetch(screenshotUrl)).blob();
+                const ref = storage.ref().child(`thumbnails/${currentUser.uid}/${Date.now()}.png`);
+                await ref.put(blob);
+                const sUrl = await ref.getDownloadURL();
+
+                await db.collection("sites").add({ ...cleanJson, uid: currentUser.uid, storage_url: sUrl, timestamp: firebase.firestore.FieldValue.serverTimestamp() });
+                status.innerText = "";
+                document.getElementById('site-input').value = '';
+            } catch (e) { status.innerText = "Error adding site."; }
+        }
+
         async function deleteSite(id, url) {
-            if(confirm("Delete site?")) { await db.collection("sites").doc(id).delete(); if(url) storage.refFromURL(url).delete().catch(()=>{}); }
+            if(confirm("Permanently delete?")) { await db.collection("sites").doc(id).delete(); if(url) storage.refFromURL(url).delete().catch(()=>{}); }
         }
 
         async function handleAuthClick() {
-            if(currentUser) { 
-                if(confirm("Sign out?")) auth.signOut(); 
-            } else {
-                const e = prompt("Email:"); 
-                const p = prompt("Password:");
-                if(!e || !p) return;
-                
-                try {
-                    await auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
-                    await auth.signInWithEmailAndPassword(e, p);
-                } catch (error) {
-                    if (error.code === 'auth/user-not-found') {
-                        await auth.createUserWithEmailAndPassword(e, p);
-                    } else {
-                        alert("Login Error: " + error.message);
-                    }
-                }
-            }
+            const e = prompt("Email:"); const p = prompt("Password:");
+            if(e && p) auth.signInWithEmailAndPassword(e,p).catch(()=>auth.createUserWithEmailAndPassword(e,p));
         }
     </script>
 </body>
