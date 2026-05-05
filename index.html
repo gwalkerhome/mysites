@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>v1.8.8 | mysites - auto-tagging</title>
+    <title>v1.8.9 | mysites - intelligence & persistence</title>
     
     <script src="https://www.gstatic.com/firebasejs/10.12.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.1/firebase-auth-compat.js"></script>
@@ -27,37 +27,45 @@
         * { box-sizing: border-box; }
         body { margin: 0; font-family: 'Inter', sans-serif; background: var(--bg-color); color: var(--text); display: flex; height: 100vh; width: 100vw; overflow: hidden; }
 
+        /* SIDEBAR */
         #sidebar { width: var(--sidebar-w); background: var(--bg-color); display: flex; flex-direction: column; align-items: center; padding: 20px 0; border-right: 1px solid var(--border); flex-shrink: 0; }
         .nav-icon { width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; border-radius: 12px; margin-bottom: 15px; cursor: pointer; text-decoration: none; background: var(--surface); color: var(--text-dim); border: 1px solid var(--border); font-size: 1.2rem; transition: 0.2s; }
         .nav-icon:hover, .nav-icon.active { background: var(--accent); color: #000; }
 
+        /* VIEWPORT */
         #viewport { flex-grow: 1; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
         #top-bar { height: var(--top-h); padding: 0 30px; display: flex; gap: 15px; align-items: center; border-bottom: 1px solid var(--border); background: var(--bg-color); flex-shrink: 0; }
         .search-box { flex: 1; background: var(--surface); border: 1px solid var(--border); padding: 10px 15px; border-radius: 8px; color: white; outline: none; height: 42px; }
 
+        /* CONTENT AREA */
         #main-content { flex-grow: 1; overflow-y: auto; padding: 30px; }
-        .dashboard-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 25px; margin-bottom: 40px; }
+        .dashboard-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 25px; margin-bottom: 20px; }
 
-        #featured-portal { min-height: 280px; border-radius: 24px; border: 1px solid var(--border); background: linear-gradient(rgba(15,23,42,0.7), rgba(15,23,42,0.95)), url('https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&q=80&w=1500'); background-size: cover; background-position: center; display: flex; flex-direction: column; justify-content: center; padding: 40px; }
+        #featured-portal { min-height: 250px; border-radius: 24px; border: 1px solid var(--border); background: linear-gradient(rgba(15,23,42,0.7), rgba(15,23,42,0.95)), url('https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&q=80&w=1500'); background-size: cover; background-position: center; display: flex; flex-direction: column; justify-content: center; padding: 40px; }
         .drop-bar { margin-top: 20px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); backdrop-filter: blur(10px); padding: 10px; border-radius: 12px; display: flex; gap: 10px; }
         .drop-bar input { background: transparent; border: none; color: white; flex: 1; outline: none; }
 
-        .widget { background: var(--surface); border: 1px solid var(--border); border-radius: 15px; padding: 15px; margin-bottom: 15px; }
-        #scratchpad { width: 100%; height: 110px; background: transparent; border: none; color: var(--text); resize: none; outline: none; font-size: 0.85rem; line-height: 1.4; }
+        /* CATEGORY FILTER */
+        #filter-bar { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 15px; margin-bottom: 20px; border-bottom: 1px solid var(--border); }
+        .filter-chip { padding: 6px 14px; background: var(--surface); border: 1px solid var(--border); border-radius: 20px; font-size: 0.75rem; color: var(--text-dim); cursor: pointer; white-space: nowrap; transition: 0.2s; }
+        .filter-chip.active { background: var(--accent); color: black; border-color: var(--accent); font-weight: bold; }
+
+        .widget { background: var(--surface); border: 1px solid var(--border); border-radius: 15px; padding: 15px; }
+        #scratchpad { width: 100%; height: 120px; background: transparent; border: none; color: var(--text); resize: none; outline: none; font-size: 0.85rem; line-height: 1.4; }
         
         #vault-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 25px; padding-bottom: 60px; }
         .site-card { background: var(--card-bg); border-radius: 16px; overflow: hidden; border: 1px solid var(--border); height: 320px; transition: 0.3s; position: relative; }
-        .site-card:hover { border-color: var(--accent); }
+        .site-card:hover { border-color: var(--accent); transform: translateY(-3px); }
         .site-card:hover .card-actions { opacity: 1; }
         
-        .card-thumb { height: 140px; background-size: cover; background-position: center; background-color: #020617; }
+        .card-thumb { height: 140px; background-size: cover; background-position: center; background-color: #020617; position: relative; }
         .card-content { padding: 15px; display: flex; flex-direction: column; gap: 8px; }
         .card-title { font-weight: 700; color: white; text-decoration: none; display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         
-        .tag-pill { background: rgba(56, 189, 248, 0.1); color: var(--accent); font-size: 0.65rem; padding: 3px 8px; border-radius: 4px; border: 1px solid rgba(56, 189, 248, 0.2); font-weight: bold; text-transform: uppercase; }
+        .tag-pill { background: rgba(56, 189, 248, 0.1); color: var(--accent); font-size: 0.6rem; padding: 3px 8px; border-radius: 4px; border: 1px solid rgba(56, 189, 248, 0.2); font-weight: bold; text-transform: uppercase; }
         .tag-container { display: flex; flex-wrap: wrap; gap: 4px; margin-top: auto; }
 
-        .card-actions { position: absolute; top: 10px; right: 10px; display: flex; gap: 6px; opacity: 0; transition: 0.2s; }
+        .card-actions { position: absolute; top: 10px; right: 10px; display: flex; gap: 6px; opacity: 0; transition: 0.2s; z-index: 10; }
         .action-btn { width: 30px; height: 30px; background: rgba(0,0,0,0.8); border: 1px solid var(--border); color: white; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 0.8rem; }
         .action-btn:hover { background: var(--accent); color: black; }
 
@@ -74,7 +82,7 @@
         <div style="color:var(--accent); font-weight:900; margin-bottom:20px; font-size:1.2rem;">MS</div>
         <a href="index.html" class="nav-icon active">⌂</a>
         <a href="apisettings.html" class="nav-icon">⚙</a>
-        <button class="nav-icon" onclick="handleAuthClick()" style="margin-top:auto;">⎋</button>
+        <button class="nav-icon" onclick="handleAuthClick()" id="auth-btn" style="margin-top:auto;">⎋</button>
     </nav>
 
     <div id="viewport">
@@ -88,22 +96,26 @@
         <main id="main-content">
             <div class="dashboard-grid">
                 <section id="featured-portal">
-                    <h2 id="hero-title" style="margin:0; font-size: 2rem;">Vault</h2>
-                    <p id="hero-desc" style="color:var(--text-dim); margin:10px 0 20px 0;">Intelligence-driven archive.</p>
+                    <h2 id="hero-title" style="margin:0; font-size: 2rem;">Archive</h2>
+                    <p id="hero-desc" style="color:var(--text-dim); margin:10px 0 20px 0;">Intelligence-driven site vault.</p>
                     <div class="drop-bar">
                         <input type="text" id="site-input" placeholder="Paste URL here...">
-                        <button onclick="handleInput()" style="background:var(--accent); border:none; padding:8px 20px; border-radius:8px; cursor:pointer; font-weight:bold;">Save</button>
+                        <button onclick="handleInput()" id="add-btn" style="background:var(--accent); border:none; padding:8px 20px; border-radius:8px; cursor:pointer; font-weight:bold;">Save</button>
                     </div>
                 </section>
-
                 <div class="utility-rail">
                     <div class="widget">
                         <div style="font-size:0.7rem; color:var(--accent); font-weight:bold; margin-bottom:8px;">SCRATCHPAD</div>
-                        <textarea id="scratchpad" placeholder="Draft thoughts..."></textarea>
+                        <textarea id="scratchpad" placeholder="Draft notes..."></textarea>
                     </div>
                 </div>
             </div>
-            <div id="status-msg" style="color:var(--accent); font-size:0.8rem; margin-bottom:15px;"></div>
+
+            <div id="filter-bar">
+                <div class="filter-chip active" onclick="setFilter('all')">All Sites</div>
+            </div>
+
+            <div id="status-msg" style="color:var(--accent); font-size:0.8rem; margin-bottom:15px; font-weight:bold;"></div>
             <div id="vault-grid"></div>
         </main>
     </div>
@@ -113,7 +125,7 @@
             <h2 style="margin-top:0; font-size:1.2rem; color:white; margin-bottom:20px;">Refine Entry</h2>
             <div class="modal-field"><label>Name</label><input type="text" id="edit-name"></div>
             <div class="modal-field"><label>Link</label><input type="text" id="edit-url"></div>
-            <div class="modal-field"><label>Tags (Categorize)</label><input type="text" id="edit-tags"></div>
+            <div class="modal-field"><label>Tags (Comma separated)</label><input type="text" id="edit-tags"></div>
             <div class="modal-field"><label>Notes</label><textarea id="edit-desc" rows="2"></textarea></div>
             <div style="display:flex; gap:10px; margin-top:10px;">
                 <button onclick="saveChanges()" style="flex:1; background:var(--accent); border:none; padding:12px; border-radius:8px; cursor:pointer; font-weight:bold;">Update</button>
@@ -139,33 +151,58 @@
         let currentUser = null;
         let currentEditId = null;
         let unsubscribe = null;
+        let activeFilter = 'all';
+        let allSites = [];
+
+        // PERSISTENCE: Ensure user stays logged in
+        auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
 
         auth.onAuthStateChanged(user => {
             currentUser = user;
-            if (user) startVaultListener(user.uid);
-            else document.getElementById('vault-grid').innerHTML = '<p style="color:var(--text-dim)">Login required.</p>';
+            if (user) {
+                document.getElementById('auth-btn').innerText = "⎋";
+                startVaultListener(user.uid);
+            } else {
+                document.getElementById('auth-btn').innerText = "⊕";
+                document.getElementById('vault-grid').innerHTML = '<p style="color:var(--text-dim)">Please login to access your vault.</p>';
+            }
         });
 
-        function renderSites(snapshot) {
+        function renderSites() {
             const grid = document.getElementById('vault-grid');
+            const filterBar = document.getElementById('filter-bar');
             grid.innerHTML = '';
-            snapshot.forEach(doc => {
-                const site = doc.data();
-                const id = doc.id;
+            
+            // Collect all unique tags for the filter bar
+            const tags = new Set();
+            allSites.forEach(s => (s.tags || []).forEach(t => tags.add(t)));
+            
+            filterBar.innerHTML = `<div class="filter-chip ${activeFilter === 'all' ? 'active' : ''}" onclick="setFilter('all')">All Sites</div>`;
+            tags.forEach(tag => {
+                const chip = document.createElement('div');
+                chip.className = `filter-chip ${activeFilter === tag ? 'active' : ''}`;
+                chip.innerText = tag;
+                chip.onclick = () => setFilter(tag);
+                filterBar.appendChild(chip);
+            });
+
+            // Filter the sites
+            const filtered = activeFilter === 'all' ? allSites : allSites.filter(s => (s.tags || []).includes(activeFilter));
+
+            filtered.forEach(site => {
                 const card = document.createElement('div');
                 card.className = 'site-card';
-                
                 const tagHtml = (site.tags || []).map(t => `<span class="tag-pill">${t}</span>`).join('');
-
+                
                 card.innerHTML = `
                     <div class="card-actions">
-                        <button class="action-btn" onclick='openEditModal("${id}", ${JSON.stringify(site).replace(/'/g, "&apos;")})'>✎</button>
-                        <button class="action-btn" onclick="deleteSite('${id}', '${site.storage_url}')">×</button>
+                        <button class="action-btn" onclick='openEditModal("${site.id}", ${JSON.stringify(site).replace(/'/g, "&apos;")})'>✎</button>
+                        <button class="action-btn" onclick="deleteSite('${site.id}', '${site.storage_url}')">×</button>
                     </div>
-                    <div class="card-thumb" style="background-image: url('${site.storage_url || ''}')"></div>
+                    <div class="card-thumb" style="background-image: url('${site.storage_url || 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=400'}')"></div>
                     <div class="card-content">
                         <a href="${site.primary_url}" target="_blank" class="card-title">${site.official_name}</a>
-                        <p style="font-size:0.75rem; color:var(--text-dim); margin:0;">${site.short_description}</p>
+                        <p style="font-size:0.7rem; color:var(--text-dim); margin:0;">${site.short_description}</p>
                         <div class="tag-container">${tagHtml}</div>
                     </div>
                 `;
@@ -173,10 +210,56 @@
             });
         }
 
+        function setFilter(tag) { activeFilter = tag; renderSites(); }
+
         function startVaultListener(uid) {
             if (unsubscribe) unsubscribe();
-            const sitesRef = db.collection("sites").where("uid", "==", uid);
-            unsubscribe = sitesRef.orderBy("timestamp", "desc").onSnapshot(snapshot => renderSites(snapshot), e => sitesRef.onSnapshot(renderSites));
+            unsubscribe = db.collection("sites").where("uid", "==", uid).orderBy("timestamp", "desc")
+                .onSnapshot(snapshot => {
+                    allSites = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                    renderSites();
+                });
+        }
+
+        async function handleInput() {
+            const urlInput = document.getElementById('site-input');
+            const val = urlInput.value.trim();
+            const gKey = localStorage.getItem('gemini_key');
+            if(!val || !gKey) return;
+
+            const status = document.getElementById('status-msg');
+            
+            // 1. DUPLICATE CHECK
+            const isDup = allSites.some(s => s.primary_url.includes(val) || val.includes(s.primary_url));
+            if(isDup) { status.innerText = "Site already exists in your vault."; return; }
+
+            status.innerText = "Researching & Tagging...";
+            try {
+                const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${gKey}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ contents: [{ parts: [{ text: `Research "${val}". Return JSON: {"official_name": "string", "primary_url": "string", "short_description": "max 20 words", "tags": ["tag1", "tag2", "tag3"]}` }] }] })
+                });
+                const data = await res.json();
+                const cleanJson = JSON.parse(data.candidates[0].content.parts[0].text.match(/\{[\s\S]*\}/)[0]);
+                
+                status.innerText = "Capturing Preview...";
+                let sUrl = "";
+                try {
+                    // Try to get screenshot, but don't fail if site blocks it
+                    const screenshotUrl = `https://api.microlink.io/?url=${encodeURIComponent(cleanJson.primary_url)}&screenshot=true&embed=screenshot.url`;
+                    const blob = await (await fetch(screenshotUrl)).blob();
+                    const ref = storage.ref().child(`thumbnails/${currentUser.uid}/${Date.now()}.png`);
+                    await ref.put(blob);
+                    sUrl = await ref.getDownloadURL();
+                } catch (err) {
+                    console.log("Screenshot blocked, using default.");
+                }
+
+                await db.collection("sites").add({ ...cleanJson, uid: currentUser.uid, storage_url: sUrl, timestamp: firebase.firestore.FieldValue.serverTimestamp() });
+                status.innerText = "Successfully added.";
+                urlInput.value = '';
+            } catch (e) { status.innerText = "Upload error. Site might be restricted."; }
         }
 
         function openEditModal(id, data) {
@@ -204,42 +287,16 @@
             } catch (e) { alert("Save error."); }
         }
 
-        async function handleInput() {
-            const val = document.getElementById('site-input').value.trim();
-            const gKey = localStorage.getItem('gemini_key');
-            if(!val || !gKey) return;
-            const status = document.getElementById('status-msg');
-            status.innerText = "Researching & Tagging...";
-            try {
-                // Gemini call now asks for tags
-                const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${gKey}`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ contents: [{ parts: [{ text: `Research "${val}". Return JSON: {"official_name": "string", "primary_url": "string", "short_description": "max 20 words", "tags": ["tag1", "tag2", "tag3"]}` }] }] })
-                });
-                const data = await res.json();
-                const cleanJson = JSON.parse(data.candidates[0].content.parts[0].text.match(/\{[\s\S]*\}/)[0]);
-                
-                status.innerText = "Generating Preview...";
-                const screenshotUrl = `https://api.microlink.io/?url=${encodeURIComponent(cleanJson.primary_url)}&screenshot=true&embed=screenshot.url`;
-                const blob = await (await fetch(screenshotUrl)).blob();
-                const ref = storage.ref().child(`thumbnails/${currentUser.uid}/${Date.now()}.png`);
-                await ref.put(blob);
-                const sUrl = await ref.getDownloadURL();
-
-                await db.collection("sites").add({ ...cleanJson, uid: currentUser.uid, storage_url: sUrl, timestamp: firebase.firestore.FieldValue.serverTimestamp() });
-                status.innerText = "";
-                document.getElementById('site-input').value = '';
-            } catch (e) { status.innerText = "Error adding site."; }
-        }
-
         async function deleteSite(id, url) {
-            if(confirm("Permanently delete?")) { await db.collection("sites").doc(id).delete(); if(url) storage.refFromURL(url).delete().catch(()=>{}); }
+            if(confirm("Delete site?")) { await db.collection("sites").doc(id).delete(); if(url) storage.refFromURL(url).delete().catch(()=>{}); }
         }
 
         async function handleAuthClick() {
-            const e = prompt("Email:"); const p = prompt("Password:");
-            if(e && p) auth.signInWithEmailAndPassword(e,p).catch(()=>auth.createUserWithEmailAndPassword(e,p));
+            if(currentUser) { auth.signOut(); }
+            else {
+                const e = prompt("Email:"); const p = prompt("Password:");
+                if(e && p) auth.signInWithEmailAndPassword(e,p).catch(()=>auth.createUserWithEmailAndPassword(e,p));
+            }
         }
     </script>
 </body>
