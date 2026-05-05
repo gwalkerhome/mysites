@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>v1.9.0 | mysites - stable auth</title>
+    <title>v1.9.1 | mysites - auth fix</title>
     
     <script src="https://www.gstatic.com/firebasejs/10.12.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.1/firebase-auth-compat.js"></script>
@@ -79,6 +79,7 @@
         <a href="index.html" class="nav-icon active">⌂</a>
         <a href="apisettings.html" class="nav-icon">⚙</a>
         <button class="nav-icon" onclick="handleAuthClick()" id="auth-btn" style="margin-top:auto;">⊕</button>
+        <button class="nav-icon" onclick="location.reload()" style="font-size: 1rem;">↻</button>
     </nav>
 
     <div id="viewport">
@@ -93,7 +94,7 @@
             <div class="dashboard-grid">
                 <section id="featured-portal">
                     <h2 id="hero-title" style="margin:0; font-size: 2.2rem;">Vault</h2>
-                    <p id="hero-desc" style="color:var(--text-dim); margin:10px 0 20px 0;">Your categorized site archive.</p>
+                    <p id="hero-desc" style="color:var(--text-dim); margin:10px 0 20px 0;">Intelligence-driven site archive.</p>
                     <div class="drop-bar">
                         <input type="text" id="site-input" placeholder="Paste URL here...">
                         <button onclick="handleInput()" id="add-btn" style="background:var(--accent); border:none; padding:8px 20px; border-radius:8px; cursor:pointer; font-weight:bold;">Save</button>
@@ -102,7 +103,7 @@
                 <div class="utility-rail">
                     <div class="widget">
                         <div style="font-size:0.7rem; color:var(--accent); font-weight:bold; margin-bottom:8px;">SCRATCHPAD</div>
-                        <textarea id="scratchpad" placeholder="Draft notes..."></textarea>
+                        <textarea id="scratchpad" placeholder="Draft thoughts..."></textarea>
                     </div>
                 </div>
             </div>
@@ -150,26 +151,32 @@
         let activeFilter = 'all';
         let allSites = [];
 
+        // Global check for login status
         auth.onAuthStateChanged(user => {
-            currentUser = user;
             const btn = document.getElementById('auth-btn');
+            const grid = document.getElementById('vault-grid');
+            const status = document.getElementById('status-msg');
+
             if (user) {
+                currentUser = user;
                 btn.innerText = "⎋";
+                status.innerText = "Logged in: " + user.email;
                 startVaultListener(user.uid);
-                document.getElementById('status-msg').innerText = "";
             } else {
+                currentUser = null;
                 btn.innerText = "⊕";
                 allSites = [];
                 renderSites();
-                document.getElementById('vault-grid').innerHTML = '<p style="color:var(--text-dim)">Login required.</p>';
+                grid.innerHTML = '<p style="color:var(--text-dim)">Vault locked. Please click ⊕ to login.</p>';
             }
         });
 
         function renderSites() {
             const grid = document.getElementById('vault-grid');
             const filterBar = document.getElementById('filter-bar');
+            if(!currentUser) return;
+
             grid.innerHTML = '';
-            
             const tags = new Set();
             allSites.forEach(s => (s.tags || []).forEach(t => tags.add(t)));
             
@@ -183,6 +190,11 @@
             });
 
             const filtered = activeFilter === 'all' ? allSites : allSites.filter(s => (s.tags || []).includes(activeFilter));
+
+            if(filtered.length === 0) {
+                grid.innerHTML = '<p style="color:var(--text-dim)">No sites found.</p>';
+                return;
+            }
 
             filtered.forEach(site => {
                 const card = document.createElement('div');
@@ -213,20 +225,22 @@
                 .onSnapshot(snapshot => {
                     allSites = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
                     renderSites();
-                }, err => console.log(err));
+                }, err => {
+                    document.getElementById('status-msg').innerText = "Permission Denied: Database access issue.";
+                });
         }
 
         async function handleInput() {
             const urlInput = document.getElementById('site-input');
             const val = urlInput.value.trim();
             const gKey = localStorage.getItem('gemini_key');
-            if(!val || !gKey) return;
+            if(!val || !gKey || !currentUser) return;
 
             const status = document.getElementById('status-msg');
-            const isDup = allSites.some(s => s.primary_url.toLowerCase().includes(val.toLowerCase()) || val.toLowerCase().includes(s.primary_url.toLowerCase()));
-            if(isDup) { status.innerText = "Duplicate: Site already in vault."; return; }
+            const isDup = allSites.some(s => s.primary_url.toLowerCase().includes(val.toLowerCase()));
+            if(isDup) { status.innerText = "Site already exists."; return; }
 
-            status.innerText = "AI Researching...";
+            status.innerText = "Researching...";
             try {
                 const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${gKey}`, {
                     method: 'POST',
@@ -236,7 +250,7 @@
                 const data = await res.json();
                 const cleanJson = JSON.parse(data.candidates[0].content.parts[0].text.match(/\{[\s\S]*\}/)[0]);
                 
-                status.innerText = "Saving data...";
+                status.innerText = "Generating thumbnail...";
                 let sUrl = "";
                 try {
                     const screenshotUrl = `https://api.microlink.io/?url=${encodeURIComponent(cleanJson.primary_url)}&screenshot=true&embed=screenshot.url`;
@@ -244,10 +258,10 @@
                     const ref = storage.ref().child(`thumbnails/${currentUser.uid}/${Date.now()}.png`);
                     await ref.put(blob);
                     sUrl = await ref.getDownloadURL();
-                } catch (err) { console.log("Thumbnail failed."); }
+                } catch (err) { sUrl = ""; }
 
                 await db.collection("sites").add({ ...cleanJson, uid: currentUser.uid, storage_url: sUrl, timestamp: firebase.firestore.FieldValue.serverTimestamp() });
-                status.innerText = "";
+                status.innerText = "Site added.";
                 urlInput.value = '';
             } catch (e) { status.innerText = "Error adding site."; }
         }
@@ -278,28 +292,26 @@
         }
 
         async function deleteSite(id, url) {
-            if(confirm("Delete this site?")) { await db.collection("sites").doc(id).delete(); if(url) storage.refFromURL(url).delete().catch(()=>{}); }
+            if(confirm("Delete site?")) { await db.collection("sites").doc(id).delete(); if(url) storage.refFromURL(url).delete().catch(()=>{}); }
         }
 
         async function handleAuthClick() {
             if(currentUser) { 
-                auth.signOut(); 
+                if(confirm("Sign out?")) auth.signOut(); 
             } else {
                 const e = prompt("Email:"); 
                 const p = prompt("Password:");
-                if(e && p) {
-                    // Set persistence BEFORE signing in
-                    auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL)
-                        .then(() => {
-                            return auth.signInWithEmailAndPassword(e,p);
-                        })
-                        .catch((error) => {
-                            document.getElementById('status-msg').innerText = "Auth Error: " + error.message;
-                            // If sign in fails, try creating the account
-                            if(error.code === 'auth/user-not-found') {
-                                auth.createUserWithEmailAndPassword(e,p);
-                            }
-                        });
+                if(!e || !p) return;
+                
+                try {
+                    await auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
+                    await auth.signInWithEmailAndPassword(e, p);
+                } catch (error) {
+                    if (error.code === 'auth/user-not-found') {
+                        await auth.createUserWithEmailAndPassword(e, p);
+                    } else {
+                        alert("Login Error: " + error.message);
+                    }
                 }
             }
         }
