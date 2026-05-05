@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>v1.9.1 | mysites - auth fix</title>
+    <title>v1.9.2 | mysites - intelligence & auth stability</title>
     
     <script src="https://www.gstatic.com/firebasejs/10.12.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.1/firebase-auth-compat.js"></script>
@@ -31,7 +31,7 @@
         .nav-icon { width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; border-radius: 12px; margin-bottom: 15px; cursor: pointer; text-decoration: none; background: var(--surface); color: var(--text-dim); border: 1px solid var(--border); font-size: 1.2rem; transition: 0.2s; }
         .nav-icon:hover, .nav-icon.active { background: var(--accent); color: #000; }
 
-        #viewport { flex-grow: 1; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
+        #viewport { flex-grow: 1; display: flex; flex-direction: column; height: 100vh; overflow: hidden; position: relative; }
         #top-bar { height: var(--top-h); padding: 0 30px; display: flex; gap: 15px; align-items: center; border-bottom: 1px solid var(--border); background: var(--bg-color); flex-shrink: 0; }
         .search-box { flex: 1; background: var(--surface); border: 1px solid var(--border); padding: 10px 15px; border-radius: 8px; color: white; outline: none; height: 42px; }
 
@@ -49,7 +49,7 @@
         .widget { background: var(--surface); border: 1px solid var(--border); border-radius: 15px; padding: 15px; }
         #scratchpad { width: 100%; height: 120px; background: transparent; border: none; color: var(--text); resize: none; outline: none; font-size: 0.85rem; line-height: 1.4; }
         
-        #vault-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 25px; padding-bottom: 60px; }
+        #vault-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 25px; padding-bottom: 80px; }
         .site-card { background: var(--card-bg); border-radius: 16px; overflow: hidden; border: 1px solid var(--border); height: 320px; transition: 0.3s; position: relative; }
         .site-card:hover { border-color: var(--accent); transform: translateY(-3px); }
         .site-card:hover .card-actions { opacity: 1; }
@@ -64,6 +64,10 @@
         .card-actions { position: absolute; top: 10px; right: 10px; display: flex; gap: 6px; opacity: 0; transition: 0.2s; z-index: 10; }
         .action-btn { width: 30px; height: 30px; background: rgba(0,0,0,0.8); border: 1px solid var(--border); color: white; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 0.8rem; }
         .action-btn:hover { background: var(--accent); color: black; }
+
+        #user-badge { position: absolute; bottom: 15px; left: 15px; background: var(--surface); border: 1px solid var(--border); padding: 5px 12px; border-radius: 20px; font-size: 0.65rem; color: var(--text-dim); display: flex; align-items: center; gap: 6px; pointer-events: none; z-index: 5; }
+        .status-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--text-dim); }
+        .status-dot.online { background: #10b981; box-shadow: 0 0 5px #10b981; }
 
         #edit-modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 1000; align-items: center; justify-content: center; padding: 20px; }
         .modal-content { background: var(--surface); width: 100%; max-width: 480px; border-radius: 20px; padding: 30px; border: 1px solid var(--border); }
@@ -115,6 +119,11 @@
             <div id="status-msg" style="color:var(--accent); font-size:0.8rem; margin-bottom:15px; font-weight:bold; min-height: 1.2rem;"></div>
             <div id="vault-grid"></div>
         </main>
+
+        <div id="user-badge">
+            <div class="status-dot" id="status-dot"></div>
+            <span id="user-display">Not Logged In</span>
+        </div>
     </div>
 
     <div id="edit-modal">
@@ -151,20 +160,23 @@
         let activeFilter = 'all';
         let allSites = [];
 
-        // Global check for login status
         auth.onAuthStateChanged(user => {
             const btn = document.getElementById('auth-btn');
             const grid = document.getElementById('vault-grid');
-            const status = document.getElementById('status-msg');
+            const userDisplay = document.getElementById('user-display');
+            const statusDot = document.getElementById('status-dot');
 
             if (user) {
                 currentUser = user;
                 btn.innerText = "⎋";
-                status.innerText = "Logged in: " + user.email;
+                userDisplay.innerText = "Logged in as: " + user.email;
+                statusDot.className = "status-dot online";
                 startVaultListener(user.uid);
             } else {
                 currentUser = null;
                 btn.innerText = "⊕";
+                userDisplay.innerText = "Not Logged In";
+                statusDot.className = "status-dot";
                 allSites = [];
                 renderSites();
                 grid.innerHTML = '<p style="color:var(--text-dim)">Vault locked. Please click ⊕ to login.</p>';
@@ -191,8 +203,8 @@
 
             const filtered = activeFilter === 'all' ? allSites : allSites.filter(s => (s.tags || []).includes(activeFilter));
 
-            if(filtered.length === 0) {
-                grid.innerHTML = '<p style="color:var(--text-dim)">No sites found.</p>';
+            if(filtered.length === 0 && allSites.length > 0) {
+                grid.innerHTML = '<p style="color:var(--text-dim)">No matching sites in this category.</p>';
                 return;
             }
 
@@ -221,12 +233,23 @@
 
         function startVaultListener(uid) {
             if (unsubscribe) unsubscribe();
+            // Added check to ensure UID exists before calling listener
+            if(!uid) return;
+            
+            const statusMsg = document.getElementById('status-msg');
+            
             unsubscribe = db.collection("sites").where("uid", "==", uid).orderBy("timestamp", "desc")
                 .onSnapshot(snapshot => {
                     allSites = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                    statusMsg.innerText = "";
                     renderSites();
                 }, err => {
-                    document.getElementById('status-msg').innerText = "Permission Denied: Database access issue.";
+                    console.error(err);
+                    if(err.code === "permission-denied") {
+                        statusMsg.innerText = "Database Access Issue: Re-authenticating...";
+                        // Re-trigger auth check if permission is denied
+                        auth.currentUser.getIdToken(true);
+                    }
                 });
         }
 
@@ -240,7 +263,7 @@
             const isDup = allSites.some(s => s.primary_url.toLowerCase().includes(val.toLowerCase()));
             if(isDup) { status.innerText = "Site already exists."; return; }
 
-            status.innerText = "Researching...";
+            status.innerText = "AI Researching...";
             try {
                 const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${gKey}`, {
                     method: 'POST',
@@ -261,7 +284,7 @@
                 } catch (err) { sUrl = ""; }
 
                 await db.collection("sites").add({ ...cleanJson, uid: currentUser.uid, storage_url: sUrl, timestamp: firebase.firestore.FieldValue.serverTimestamp() });
-                status.innerText = "Site added.";
+                status.innerText = "";
                 urlInput.value = '';
             } catch (e) { status.innerText = "Error adding site."; }
         }
