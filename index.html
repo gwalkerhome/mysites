@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>v1.8.9 | mysites - intelligence & persistence</title>
+    <title>v1.9.0 | mysites - stable auth</title>
     
     <script src="https://www.gstatic.com/firebasejs/10.12.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.1/firebase-auth-compat.js"></script>
@@ -27,17 +27,14 @@
         * { box-sizing: border-box; }
         body { margin: 0; font-family: 'Inter', sans-serif; background: var(--bg-color); color: var(--text); display: flex; height: 100vh; width: 100vw; overflow: hidden; }
 
-        /* SIDEBAR */
         #sidebar { width: var(--sidebar-w); background: var(--bg-color); display: flex; flex-direction: column; align-items: center; padding: 20px 0; border-right: 1px solid var(--border); flex-shrink: 0; }
         .nav-icon { width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; border-radius: 12px; margin-bottom: 15px; cursor: pointer; text-decoration: none; background: var(--surface); color: var(--text-dim); border: 1px solid var(--border); font-size: 1.2rem; transition: 0.2s; }
         .nav-icon:hover, .nav-icon.active { background: var(--accent); color: #000; }
 
-        /* VIEWPORT */
         #viewport { flex-grow: 1; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
         #top-bar { height: var(--top-h); padding: 0 30px; display: flex; gap: 15px; align-items: center; border-bottom: 1px solid var(--border); background: var(--bg-color); flex-shrink: 0; }
         .search-box { flex: 1; background: var(--surface); border: 1px solid var(--border); padding: 10px 15px; border-radius: 8px; color: white; outline: none; height: 42px; }
 
-        /* CONTENT AREA */
         #main-content { flex-grow: 1; overflow-y: auto; padding: 30px; }
         .dashboard-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 25px; margin-bottom: 20px; }
 
@@ -45,7 +42,6 @@
         .drop-bar { margin-top: 20px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); backdrop-filter: blur(10px); padding: 10px; border-radius: 12px; display: flex; gap: 10px; }
         .drop-bar input { background: transparent; border: none; color: white; flex: 1; outline: none; }
 
-        /* CATEGORY FILTER */
         #filter-bar { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 15px; margin-bottom: 20px; border-bottom: 1px solid var(--border); }
         .filter-chip { padding: 6px 14px; background: var(--surface); border: 1px solid var(--border); border-radius: 20px; font-size: 0.75rem; color: var(--text-dim); cursor: pointer; white-space: nowrap; transition: 0.2s; }
         .filter-chip.active { background: var(--accent); color: black; border-color: var(--accent); font-weight: bold; }
@@ -82,7 +78,7 @@
         <div style="color:var(--accent); font-weight:900; margin-bottom:20px; font-size:1.2rem;">MS</div>
         <a href="index.html" class="nav-icon active">⌂</a>
         <a href="apisettings.html" class="nav-icon">⚙</a>
-        <button class="nav-icon" onclick="handleAuthClick()" id="auth-btn" style="margin-top:auto;">⎋</button>
+        <button class="nav-icon" onclick="handleAuthClick()" id="auth-btn" style="margin-top:auto;">⊕</button>
     </nav>
 
     <div id="viewport">
@@ -96,8 +92,8 @@
         <main id="main-content">
             <div class="dashboard-grid">
                 <section id="featured-portal">
-                    <h2 id="hero-title" style="margin:0; font-size: 2rem;">Archive</h2>
-                    <p id="hero-desc" style="color:var(--text-dim); margin:10px 0 20px 0;">Intelligence-driven site vault.</p>
+                    <h2 id="hero-title" style="margin:0; font-size: 2.2rem;">Vault</h2>
+                    <p id="hero-desc" style="color:var(--text-dim); margin:10px 0 20px 0;">Your categorized site archive.</p>
                     <div class="drop-bar">
                         <input type="text" id="site-input" placeholder="Paste URL here...">
                         <button onclick="handleInput()" id="add-btn" style="background:var(--accent); border:none; padding:8px 20px; border-radius:8px; cursor:pointer; font-weight:bold;">Save</button>
@@ -115,7 +111,7 @@
                 <div class="filter-chip active" onclick="setFilter('all')">All Sites</div>
             </div>
 
-            <div id="status-msg" style="color:var(--accent); font-size:0.8rem; margin-bottom:15px; font-weight:bold;"></div>
+            <div id="status-msg" style="color:var(--accent); font-size:0.8rem; margin-bottom:15px; font-weight:bold; min-height: 1.2rem;"></div>
             <div id="vault-grid"></div>
         </main>
     </div>
@@ -154,17 +150,18 @@
         let activeFilter = 'all';
         let allSites = [];
 
-        // PERSISTENCE: Ensure user stays logged in
-        auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
-
         auth.onAuthStateChanged(user => {
             currentUser = user;
+            const btn = document.getElementById('auth-btn');
             if (user) {
-                document.getElementById('auth-btn').innerText = "⎋";
+                btn.innerText = "⎋";
                 startVaultListener(user.uid);
+                document.getElementById('status-msg').innerText = "";
             } else {
-                document.getElementById('auth-btn').innerText = "⊕";
-                document.getElementById('vault-grid').innerHTML = '<p style="color:var(--text-dim)">Please login to access your vault.</p>';
+                btn.innerText = "⊕";
+                allSites = [];
+                renderSites();
+                document.getElementById('vault-grid').innerHTML = '<p style="color:var(--text-dim)">Login required.</p>';
             }
         });
 
@@ -173,12 +170,11 @@
             const filterBar = document.getElementById('filter-bar');
             grid.innerHTML = '';
             
-            // Collect all unique tags for the filter bar
             const tags = new Set();
             allSites.forEach(s => (s.tags || []).forEach(t => tags.add(t)));
             
             filterBar.innerHTML = `<div class="filter-chip ${activeFilter === 'all' ? 'active' : ''}" onclick="setFilter('all')">All Sites</div>`;
-            tags.forEach(tag => {
+            Array.from(tags).sort().forEach(tag => {
                 const chip = document.createElement('div');
                 chip.className = `filter-chip ${activeFilter === tag ? 'active' : ''}`;
                 chip.innerText = tag;
@@ -186,7 +182,6 @@
                 filterBar.appendChild(chip);
             });
 
-            // Filter the sites
             const filtered = activeFilter === 'all' ? allSites : allSites.filter(s => (s.tags || []).includes(activeFilter));
 
             filtered.forEach(site => {
@@ -218,7 +213,7 @@
                 .onSnapshot(snapshot => {
                     allSites = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
                     renderSites();
-                });
+                }, err => console.log(err));
         }
 
         async function handleInput() {
@@ -228,12 +223,10 @@
             if(!val || !gKey) return;
 
             const status = document.getElementById('status-msg');
-            
-            // 1. DUPLICATE CHECK
-            const isDup = allSites.some(s => s.primary_url.includes(val) || val.includes(s.primary_url));
-            if(isDup) { status.innerText = "Site already exists in your vault."; return; }
+            const isDup = allSites.some(s => s.primary_url.toLowerCase().includes(val.toLowerCase()) || val.toLowerCase().includes(s.primary_url.toLowerCase()));
+            if(isDup) { status.innerText = "Duplicate: Site already in vault."; return; }
 
-            status.innerText = "Researching & Tagging...";
+            status.innerText = "AI Researching...";
             try {
                 const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${gKey}`, {
                     method: 'POST',
@@ -243,23 +236,20 @@
                 const data = await res.json();
                 const cleanJson = JSON.parse(data.candidates[0].content.parts[0].text.match(/\{[\s\S]*\}/)[0]);
                 
-                status.innerText = "Capturing Preview...";
+                status.innerText = "Saving data...";
                 let sUrl = "";
                 try {
-                    // Try to get screenshot, but don't fail if site blocks it
                     const screenshotUrl = `https://api.microlink.io/?url=${encodeURIComponent(cleanJson.primary_url)}&screenshot=true&embed=screenshot.url`;
                     const blob = await (await fetch(screenshotUrl)).blob();
                     const ref = storage.ref().child(`thumbnails/${currentUser.uid}/${Date.now()}.png`);
                     await ref.put(blob);
                     sUrl = await ref.getDownloadURL();
-                } catch (err) {
-                    console.log("Screenshot blocked, using default.");
-                }
+                } catch (err) { console.log("Thumbnail failed."); }
 
                 await db.collection("sites").add({ ...cleanJson, uid: currentUser.uid, storage_url: sUrl, timestamp: firebase.firestore.FieldValue.serverTimestamp() });
-                status.innerText = "Successfully added.";
+                status.innerText = "";
                 urlInput.value = '';
-            } catch (e) { status.innerText = "Upload error. Site might be restricted."; }
+            } catch (e) { status.innerText = "Error adding site."; }
         }
 
         function openEditModal(id, data) {
@@ -288,14 +278,29 @@
         }
 
         async function deleteSite(id, url) {
-            if(confirm("Delete site?")) { await db.collection("sites").doc(id).delete(); if(url) storage.refFromURL(url).delete().catch(()=>{}); }
+            if(confirm("Delete this site?")) { await db.collection("sites").doc(id).delete(); if(url) storage.refFromURL(url).delete().catch(()=>{}); }
         }
 
         async function handleAuthClick() {
-            if(currentUser) { auth.signOut(); }
-            else {
-                const e = prompt("Email:"); const p = prompt("Password:");
-                if(e && p) auth.signInWithEmailAndPassword(e,p).catch(()=>auth.createUserWithEmailAndPassword(e,p));
+            if(currentUser) { 
+                auth.signOut(); 
+            } else {
+                const e = prompt("Email:"); 
+                const p = prompt("Password:");
+                if(e && p) {
+                    // Set persistence BEFORE signing in
+                    auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL)
+                        .then(() => {
+                            return auth.signInWithEmailAndPassword(e,p);
+                        })
+                        .catch((error) => {
+                            document.getElementById('status-msg').innerText = "Auth Error: " + error.message;
+                            // If sign in fails, try creating the account
+                            if(error.code === 'auth/user-not-found') {
+                                auth.createUserWithEmailAndPassword(e,p);
+                            }
+                        });
+                }
             }
         }
     </script>
