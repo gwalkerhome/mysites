@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>v1.9.5 | mysites - tag management</title>
+    <title>v1.9.6 | mysites - image recovery</title>
     
     <script src="https://www.gstatic.com/firebasejs/10.12.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.1/firebase-auth-compat.js"></script>
@@ -64,7 +64,6 @@
         .action-btn { width: 30px; height: 30px; background: rgba(0,0,0,0.8); border: 1px solid var(--border); color: white; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 0.8rem; }
         .action-btn:hover { background: var(--accent); color: black; }
 
-        /* Tag Manager Styles */
         .tag-picker { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 10px; padding: 10px; background: var(--bg-color); border-radius: 8px; border: 1px solid var(--border); max-height: 100px; overflow-y: auto; }
         .selectable-tag { padding: 4px 10px; border-radius: 6px; background: var(--surface); border: 1px solid var(--border); font-size: 0.7rem; cursor: pointer; color: var(--text-dim); }
         .selectable-tag.selected { background: var(--accent); color: black; border-color: var(--accent); }
@@ -74,10 +73,13 @@
         .status-dot.online { background: #10b981; box-shadow: 0 0 5px #10b981; }
 
         #edit-modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 1000; align-items: center; justify-content: center; padding: 20px; }
-        .modal-content { background: var(--surface); width: 100%; max-width: 480px; border-radius: 20px; padding: 30px; border: 1px solid var(--border); }
+        .modal-content { background: var(--surface); width: 100%; max-width: 500px; border-radius: 20px; padding: 30px; border: 1px solid var(--border); max-height: 90vh; overflow-y: auto; }
         .modal-field { margin-bottom: 15px; }
         .modal-field label { display: block; font-size: 0.75rem; color: var(--accent); margin-bottom: 5px; font-weight: bold; }
         .modal-field input, .modal-field textarea { width: 100%; padding: 12px; border-radius: 8px; background: var(--bg-color); border: 1px solid var(--border); color: white; outline: none; }
+        
+        .upload-zone { border: 2px dashed var(--border); border-radius: 12px; padding: 15px; text-align: center; cursor: pointer; transition: 0.2s; }
+        .upload-zone:hover { border-color: var(--accent); background: rgba(56, 189, 248, 0.05); }
     </style>
 </head>
 <body>
@@ -85,12 +87,10 @@
     <nav id="sidebar">
         <div style="color:var(--accent); font-weight:900; margin-bottom:20px; font-size:1.2rem;">MS</div>
         <a href="index.html" class="nav-icon active" data-tooltip="Home">⌂</a>
-        
         <div onclick="setFilter('dev')" class="nav-icon" data-tooltip="Dev" style="color:#f472b6;">💻</div>
         <div onclick="setFilter('ai')" class="nav-icon" data-tooltip="AI" style="color:#fbbf24;">⚡</div>
         <div onclick="setFilter('work')" class="nav-icon" data-tooltip="Work" style="color:#34d399;">💼</div>
         <div onclick="setFilter('media')" class="nav-icon" data-tooltip="Media" style="color:#a78bfa;">🎬</div>
-
         <a href="apisettings.html" class="nav-icon" data-tooltip="Settings" style="margin-top:auto;">⚙</a>
         <button class="nav-icon" onclick="handleAuthClick()" id="auth-btn" data-tooltip="Account">⊕</button>
         <button class="nav-icon" onclick="location.reload()" data-tooltip="Reload">↻</button>
@@ -114,18 +114,13 @@
                         <button onclick="handleInput()" id="add-btn" style="background:var(--accent); border:none; padding:8px 20px; border-radius:8px; cursor:pointer; font-weight:bold;">Save</button>
                     </div>
                 </section>
-                <div class="utility-rail">
-                    <div class="widget">
-                        <div style="font-size:0.7rem; color:var(--accent); font-weight:bold; margin-bottom:8px;">SCRATCHPAD</div>
-                        <textarea id="scratchpad" placeholder="Draft thoughts..."></textarea>
-                    </div>
+                <div class="widget">
+                    <div style="font-size:0.7rem; color:var(--accent); font-weight:bold; margin-bottom:8px;">SCRATCHPAD</div>
+                    <textarea id="scratchpad" style="width:100%; height:120px; background:transparent; border:none; color:white; resize:none; outline:none; font-size:0.85rem;" placeholder="Draft thoughts..."></textarea>
                 </div>
             </div>
 
-            <div id="filter-bar">
-                <div class="filter-chip active" id="chip-all" onclick="setFilter('all')">All Sites</div>
-            </div>
-
+            <div id="filter-bar"></div>
             <div id="status-msg" style="color:var(--accent); font-size:0.8rem; margin-bottom:15px; font-weight:bold; min-height: 1.2rem;"></div>
             <div id="vault-grid"></div>
         </main>
@@ -139,16 +134,26 @@
     <div id="edit-modal">
         <div class="modal-content">
             <h2 style="margin-top:0; font-size:1.2rem; color:white; margin-bottom:20px;">Refine Entry</h2>
+            
+            <div class="modal-field">
+                <label>Update Thumbnail</label>
+                <div class="upload-zone" onclick="document.getElementById('file-input').click()">
+                    <span id="file-status" style="font-size:0.8rem; color:var(--text-dim);">Click to upload new image</span>
+                    <input type="file" id="file-input" hidden accept="image/*" onchange="handleFileSelect(this)">
+                </div>
+            </div>
+
             <div class="modal-field"><label>Name</label><input type="text" id="edit-name"></div>
             <div class="modal-field"><label>Link</label><input type="text" id="edit-url"></div>
             <div class="modal-field">
-                <label>Tags (Select existing or type new)</label>
-                <input type="text" id="edit-tags" placeholder="Add tag...">
+                <label>Tags</label>
+                <input type="text" id="edit-tags" placeholder="Add custom tag...">
                 <div class="tag-picker" id="tag-picker"></div>
             </div>
             <div class="modal-field"><label>Notes</label><textarea id="edit-desc" rows="2"></textarea></div>
+            
             <div style="display:flex; gap:10px; margin-top:10px;">
-                <button onclick="saveChanges()" style="flex:1; background:var(--accent); border:none; padding:12px; border-radius:8px; cursor:pointer; font-weight:bold;">Update</button>
+                <button id="modal-save-btn" onclick="saveChanges()" style="flex:1; background:var(--accent); border:none; padding:12px; border-radius:8px; cursor:pointer; font-weight:bold;">Update</button>
                 <button onclick="closeModal()" style="flex:1; background:transparent; border:1px solid var(--border); color:white; padding:12px; border-radius:8px; cursor:pointer;">Cancel</button>
             </div>
         </div>
@@ -174,6 +179,7 @@
         let allSites = [];
         let activeFilter = 'all';
         let currentSelectedTags = [];
+        let selectedFile = null;
 
         auth.onAuthStateChanged(user => {
             const btn = document.getElementById('auth-btn');
@@ -197,11 +203,8 @@
 
         function startVaultListener(uid) {
             if (unsubscribe) unsubscribe();
-            const sitesRef = db.collection("sites").where("uid", "==", uid);
-            
-            unsubscribe = sitesRef.onSnapshot(snapshot => {
+            unsubscribe = db.collection("sites").where("uid", "==", uid).onSnapshot(snapshot => {
                 allSites = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                // Local sort by timestamp
                 allSites.sort((a,b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0));
                 renderTags();
                 renderSites();
@@ -209,42 +212,30 @@
         }
 
         function renderTags() {
-            const filterBar = document.getElementById('filter-bar');
+            const bar = document.getElementById('filter-bar');
             const tags = new Set();
             allSites.forEach(s => (s.tags || []).forEach(t => tags.add(t)));
-            
-            filterBar.innerHTML = `<div class="filter-chip ${activeFilter === 'all' ? 'active' : ''}" onclick="setFilter('all')">All Sites</div>`;
+            bar.innerHTML = `<div class="filter-chip ${activeFilter === 'all' ? 'active' : ''}" onclick="setFilter('all')">All Sites</div>`;
             Array.from(tags).sort().forEach(tag => {
                 const chip = document.createElement('div');
                 chip.className = `filter-chip ${activeFilter === tag ? 'active' : ''}`;
                 chip.innerText = tag;
                 chip.onclick = () => setFilter(tag);
-                filterBar.appendChild(chip);
+                bar.appendChild(chip);
             });
         }
 
-        function setFilter(tag) {
-            activeFilter = tag;
-            renderTags();
-            renderSites();
-        }
+        function setFilter(tag) { activeFilter = tag; renderTags(); renderSites(); }
 
         function renderSites() {
             const grid = document.getElementById('vault-grid');
             grid.innerHTML = '';
-            
             const filtered = activeFilter === 'all' ? allSites : allSites.filter(s => (s.tags || []).includes(activeFilter));
-
-            if (filtered.length === 0) {
-                grid.innerHTML = '<p style="color:var(--text-dim)">No entries found.</p>';
-                return;
-            }
+            if (filtered.length === 0) { grid.innerHTML = '<p style="color:var(--text-dim)">No entries found.</p>'; return; }
 
             filtered.forEach(site => {
                 const card = document.createElement('div');
                 card.className = 'site-card';
-                const tagHtml = (site.tags || []).map(t => `<span class="tag-pill">${t}</span>`).join('');
-
                 card.innerHTML = `
                     <div class="card-actions">
                         <button class="action-btn" onclick='openEditModal("${site.id}")'>✎</button>
@@ -254,23 +245,32 @@
                     <div class="card-content">
                         <a href="${site.primary_url}" target="_blank" class="card-title">${site.official_name}</a>
                         <p style="font-size:0.7rem; color:var(--text-dim); margin:0;">${site.short_description}</p>
-                        <div class="tag-container">${tagHtml}</div>
+                        <div class="tag-container">${(site.tags || []).map(t => `<span class="tag-pill">${t}</span>`).join('')}</div>
                     </div>
                 `;
                 grid.appendChild(card);
             });
         }
 
+        function handleFileSelect(input) {
+            if(input.files && input.files[0]) {
+                selectedFile = input.files[0];
+                document.getElementById('file-status').innerText = "Image selected: " + selectedFile.name;
+                document.getElementById('file-status').style.color = "var(--accent)";
+            }
+        }
+
         function openEditModal(id) {
             const site = allSites.find(s => s.id === id);
             currentEditId = id;
             currentSelectedTags = site.tags || [];
-            
+            selectedFile = null;
+            document.getElementById('file-status').innerText = "Click to upload new image";
+            document.getElementById('file-status').style.color = "var(--text-dim)";
             document.getElementById('edit-name').value = site.official_name || "";
             document.getElementById('edit-url').value = site.primary_url || "";
             document.getElementById('edit-desc').value = site.short_description || "";
             document.getElementById('edit-tags').value = "";
-            
             refreshTagPicker();
             document.getElementById('edit-modal').style.display = 'flex';
         }
@@ -279,53 +279,60 @@
             const picker = document.getElementById('tag-picker');
             const masterTags = new Set();
             allSites.forEach(s => (s.tags || []).forEach(t => masterTags.add(t)));
-            
             picker.innerHTML = '';
             Array.from(masterTags).sort().forEach(tag => {
                 const div = document.createElement('div');
                 div.className = `selectable-tag ${currentSelectedTags.includes(tag) ? 'selected' : ''}`;
                 div.innerText = tag;
                 div.onclick = () => {
-                    if(currentSelectedTags.includes(tag)) {
-                        currentSelectedTags = currentSelectedTags.filter(t => t !== tag);
-                    } else {
-                        currentSelectedTags.push(tag);
-                    }
+                    if(currentSelectedTags.includes(tag)) currentSelectedTags = currentSelectedTags.filter(t => t !== tag);
+                    else currentSelectedTags.push(tag);
                     refreshTagPicker();
                 };
                 picker.appendChild(div);
             });
         }
 
-        function closeModal() { document.getElementById('edit-modal').style.display = 'none'; }
-
         async function saveChanges() {
-            const newTag = document.getElementById('edit-tags').value.trim().toLowerCase();
-            if(newTag && !currentSelectedTags.includes(newTag)) {
-                currentSelectedTags.push(newTag);
-            }
+            const btn = document.getElementById('modal-save-btn');
+            const originalText = btn.innerText;
+            btn.innerText = "Uploading...";
+            btn.disabled = true;
 
-            const up = { 
-                official_name: document.getElementById('edit-name').value, 
-                primary_url: document.getElementById('edit-url').value,
-                short_description: document.getElementById('edit-desc').value,
-                tags: currentSelectedTags 
-            };
             try {
-                await db.collection("sites").doc(currentEditId).update(up);
+                const newTag = document.getElementById('edit-tags').value.trim().toLowerCase();
+                if(newTag && !currentSelectedTags.includes(newTag)) currentSelectedTags.push(newTag);
+
+                let sUrl = allSites.find(s => s.id === currentEditId).storage_url;
+                
+                if(selectedFile) {
+                    const ref = storage.ref().child(`thumbnails/${currentUser.uid}/${Date.now()}_${selectedFile.name}`);
+                    await ref.put(selectedFile);
+                    sUrl = await ref.getDownloadURL();
+                }
+
+                await db.collection("sites").doc(currentEditId).update({ 
+                    official_name: document.getElementById('edit-name').value, 
+                    primary_url: document.getElementById('edit-url').value,
+                    short_description: document.getElementById('edit-desc').value,
+                    tags: currentSelectedTags,
+                    storage_url: sUrl
+                });
                 closeModal();
-            } catch (e) { alert("Save error."); }
+            } catch (e) { alert("Error saving."); } finally {
+                btn.innerText = originalText;
+                btn.disabled = false;
+            }
         }
 
+        function closeModal() { document.getElementById('edit-modal').style.display = 'none'; }
+
         async function handleInput() {
-            const urlInput = document.getElementById('site-input');
-            const val = urlInput.value.trim();
+            const val = document.getElementById('site-input').value.trim();
             const gKey = localStorage.getItem('gemini_key');
             if(!val || !gKey || !currentUser) return;
-
             const status = document.getElementById('status-msg');
             status.innerText = "Researching...";
-            
             try {
                 const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${gKey}`, {
                     method: 'POST',
@@ -334,20 +341,9 @@
                 });
                 const data = await res.json();
                 const cleanJson = JSON.parse(data.candidates[0].content.parts[0].text.match(/\{[\s\S]*\}/)[0]);
-                
-                status.innerText = "Capturing...";
-                let sUrl = "";
-                try {
-                    const screenshotUrl = `https://api.microlink.io/?url=${encodeURIComponent(cleanJson.primary_url)}&screenshot=true&embed=screenshot.url`;
-                    const blob = await (await fetch(screenshotUrl)).blob();
-                    const ref = storage.ref().child(`thumbnails/${currentUser.uid}/${Date.now()}.png`);
-                    await ref.put(blob);
-                    sUrl = await ref.getDownloadURL();
-                } catch (err) { sUrl = ""; }
-
-                await db.collection("sites").add({ ...cleanJson, uid: currentUser.uid, storage_url: sUrl, timestamp: firebase.firestore.FieldValue.serverTimestamp() });
+                await db.collection("sites").add({ ...cleanJson, uid: currentUser.uid, storage_url: "", timestamp: firebase.firestore.FieldValue.serverTimestamp() });
                 status.innerText = "";
-                urlInput.value = '';
+                document.getElementById('site-input').value = '';
             } catch (e) { status.innerText = "Error adding site."; }
         }
 
@@ -359,20 +355,10 @@
         }
 
         async function handleAuthClick() {
-            if(currentUser) { 
-                if(confirm("Sign out?")) auth.signOut(); 
-            } else {
+            if(currentUser) { if(confirm("Sign out?")) auth.signOut(); }
+            else {
                 const e = prompt("Email:"); const p = prompt("Password:");
-                if(!e || !p) return;
-                try {
-                    await auth.signInWithEmailAndPassword(e, p);
-                } catch (error) {
-                    if (error.code === 'auth/user-not-found') {
-                        await auth.createUserWithEmailAndPassword(e, p);
-                    } else {
-                        alert("Login Error: " + error.message);
-                    }
-                }
+                if(e && p) auth.signInWithEmailAndPassword(e, p).catch(() => auth.createUserWithEmailAndPassword(e, p));
             }
         }
     </script>
