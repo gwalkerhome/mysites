@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>v1.9.7 | mysites - manual add & error fix</title>
+    <title>v1.9.8 | mysites - external link fix</title>
     
     <script src="https://www.gstatic.com/firebasejs/10.12.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.1/firebase-auth-compat.js"></script>
@@ -263,6 +263,15 @@
             }
         }
 
+        function formatUrl(url) {
+            if (!url) return "";
+            let trimmed = url.trim();
+            if (!/^https?:\/\//i.test(trimmed)) {
+                return "https://" + trimmed;
+            }
+            return trimmed;
+        }
+
         function openEditModal(id) {
             const site = allSites.find(s => s.id === id);
             currentEditId = id;
@@ -325,7 +334,6 @@
                 if(newTag && !currentSelectedTags.includes(newTag)) currentSelectedTags.push(newTag);
 
                 let sUrl = "";
-                // If editing, get existing URL first
                 if (currentEditId) {
                     sUrl = allSites.find(s => s.id === currentEditId).storage_url || "";
                 }
@@ -336,9 +344,11 @@
                     sUrl = await ref.getDownloadURL();
                 }
 
+                const finalUrl = formatUrl(document.getElementById('edit-url').value);
+
                 const payload = {
                     official_name: document.getElementById('edit-name').value, 
-                    primary_url: document.getElementById('edit-url').value,
+                    primary_url: finalUrl,
                     short_description: document.getElementById('edit-desc').value,
                     tags: currentSelectedTags,
                     storage_url: sUrl,
@@ -382,6 +392,9 @@
                 const data = await res.json();
                 const cleanJson = JSON.parse(data.candidates[0].content.parts[0].text.match(/\{[\s\S]*\}/)[0]);
                 
+                // Ensure researched URL is also properly formatted
+                cleanJson.primary_url = formatUrl(cleanJson.primary_url);
+
                 await db.collection("sites").add({ ...cleanJson, uid: currentUser.uid, storage_url: "", timestamp: firebase.firestore.FieldValue.serverTimestamp() });
                 status.innerText = "Success!";
                 setTimeout(() => { status.innerText = ""; }, 2000);
