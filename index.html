@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>v1.9.6 | mysites - image recovery</title>
+    <title>v1.9.7 | mysites - manual add & error fix</title>
     
     <script src="https://www.gstatic.com/firebasejs/10.12.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.1/firebase-auth-compat.js"></script>
@@ -80,6 +80,9 @@
         
         .upload-zone { border: 2px dashed var(--border); border-radius: 12px; padding: 15px; text-align: center; cursor: pointer; transition: 0.2s; }
         .upload-zone:hover { border-color: var(--accent); background: rgba(56, 189, 248, 0.05); }
+
+        .btn-icon { width: 42px; height: 42px; display: flex; align-items: center; justify-content: center; border-radius: 8px; cursor: pointer; border: 1px solid var(--border); background: var(--surface); color: white; transition: 0.2s; }
+        .btn-icon:hover { border-color: var(--accent); color: var(--accent); }
     </style>
 </head>
 <body>
@@ -111,7 +114,8 @@
                     <p id="hero-desc" style="color:var(--text-dim); margin:10px 0 20px 0;">Intelligence-driven site archive.</p>
                     <div class="drop-bar">
                         <input type="text" id="site-input" placeholder="Paste URL here...">
-                        <button onclick="handleInput()" id="add-btn" style="background:var(--accent); border:none; padding:8px 20px; border-radius:8px; cursor:pointer; font-weight:bold;">Save</button>
+                        <button onclick="handleInput()" id="add-btn" style="background:var(--accent); border:none; padding:0 20px; border-radius:8px; cursor:pointer; font-weight:bold; height: 42px;">Save</button>
+                        <button onclick="openManualAdd()" class="btn-icon" title="Manual Add">⊕</button>
                     </div>
                 </section>
                 <div class="widget">
@@ -133,7 +137,7 @@
 
     <div id="edit-modal">
         <div class="modal-content">
-            <h2 style="margin-top:0; font-size:1.2rem; color:white; margin-bottom:20px;">Refine Entry</h2>
+            <h2 id="modal-title" style="margin-top:0; font-size:1.2rem; color:white; margin-bottom:20px;">Refine Entry</h2>
             
             <div class="modal-field">
                 <label>Update Thumbnail</label>
@@ -174,7 +178,7 @@
         const storage = firebase.storage();
 
         let currentUser = null;
-        let currentEditId = null;
+        let currentEditId = null; 
         let unsubscribe = null;
         let allSites = [];
         let activeFilter = 'all';
@@ -185,7 +189,6 @@
             const btn = document.getElementById('auth-btn');
             const userDisplay = document.getElementById('user-display');
             const statusDot = document.getElementById('status-dot');
-
             if (user) {
                 currentUser = user;
                 btn.innerText = "⎋";
@@ -263,13 +266,31 @@
         function openEditModal(id) {
             const site = allSites.find(s => s.id === id);
             currentEditId = id;
-            currentSelectedTags = site.tags || [];
+            currentSelectedTags = [...(site.tags || [])];
             selectedFile = null;
+            document.getElementById('modal-title').innerText = "Refine Entry";
+            document.getElementById('modal-save-btn').innerText = "Update";
             document.getElementById('file-status').innerText = "Click to upload new image";
             document.getElementById('file-status').style.color = "var(--text-dim)";
             document.getElementById('edit-name').value = site.official_name || "";
             document.getElementById('edit-url').value = site.primary_url || "";
             document.getElementById('edit-desc').value = site.short_description || "";
+            document.getElementById('edit-tags').value = "";
+            refreshTagPicker();
+            document.getElementById('edit-modal').style.display = 'flex';
+        }
+
+        function openManualAdd() {
+            currentEditId = null;
+            currentSelectedTags = [];
+            selectedFile = null;
+            document.getElementById('modal-title').innerText = "Manual Add Site";
+            document.getElementById('modal-save-btn').innerText = "Create Site";
+            document.getElementById('file-status').innerText = "Click to upload thumbnail";
+            document.getElementById('file-status').style.color = "var(--text-dim)";
+            document.getElementById('edit-name').value = "";
+            document.getElementById('edit-url').value = "";
+            document.getElementById('edit-desc').value = "";
             document.getElementById('edit-tags').value = "";
             refreshTagPicker();
             document.getElementById('edit-modal').style.display = 'flex';
@@ -296,14 +317,18 @@
         async function saveChanges() {
             const btn = document.getElementById('modal-save-btn');
             const originalText = btn.innerText;
-            btn.innerText = "Uploading...";
+            btn.innerText = "Processing...";
             btn.disabled = true;
 
             try {
                 const newTag = document.getElementById('edit-tags').value.trim().toLowerCase();
                 if(newTag && !currentSelectedTags.includes(newTag)) currentSelectedTags.push(newTag);
 
-                let sUrl = allSites.find(s => s.id === currentEditId).storage_url;
+                let sUrl = "";
+                // If editing, get existing URL first
+                if (currentEditId) {
+                    sUrl = allSites.find(s => s.id === currentEditId).storage_url || "";
+                }
                 
                 if(selectedFile) {
                     const ref = storage.ref().child(`thumbnails/${currentUser.uid}/${Date.now()}_${selectedFile.name}`);
@@ -311,15 +336,23 @@
                     sUrl = await ref.getDownloadURL();
                 }
 
-                await db.collection("sites").doc(currentEditId).update({ 
+                const payload = {
                     official_name: document.getElementById('edit-name').value, 
                     primary_url: document.getElementById('edit-url').value,
                     short_description: document.getElementById('edit-desc').value,
                     tags: currentSelectedTags,
-                    storage_url: sUrl
-                });
+                    storage_url: sUrl,
+                    uid: currentUser.uid,
+                    timestamp: firebase.firestore.FieldValue.serverTimestamp()
+                };
+
+                if (currentEditId) {
+                    await db.collection("sites").doc(currentEditId).update(payload);
+                } else {
+                    await db.collection("sites").add(payload);
+                }
                 closeModal();
-            } catch (e) { alert("Error saving."); } finally {
+            } catch (e) { alert("Error saving."); console.error(e); } finally {
                 btn.innerText = originalText;
                 btn.disabled = false;
             }
@@ -328,23 +361,37 @@
         function closeModal() { document.getElementById('edit-modal').style.display = 'none'; }
 
         async function handleInput() {
-            const val = document.getElementById('site-input').value.trim();
+            const urlInput = document.getElementById('site-input');
+            const saveBtn = document.getElementById('add-btn');
+            const val = urlInput.value.trim();
             const gKey = localStorage.getItem('gemini_key');
             if(!val || !gKey || !currentUser) return;
+
             const status = document.getElementById('status-msg');
             status.innerText = "Researching...";
+            saveBtn.disabled = true;
+
             try {
                 const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${gKey}`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ contents: [{ parts: [{ text: `Research "${val}". Return JSON: {"official_name": "string", "primary_url": "string", "short_description": "max 20 words", "tags": ["tag1", "tag2", "tag3"]}` }] }] })
                 });
+                
+                if (!res.ok) throw new Error("API call failed");
                 const data = await res.json();
                 const cleanJson = JSON.parse(data.candidates[0].content.parts[0].text.match(/\{[\s\S]*\}/)[0]);
+                
                 await db.collection("sites").add({ ...cleanJson, uid: currentUser.uid, storage_url: "", timestamp: firebase.firestore.FieldValue.serverTimestamp() });
-                status.innerText = "";
-                document.getElementById('site-input').value = '';
-            } catch (e) { status.innerText = "Error adding site."; }
+                status.innerText = "Success!";
+                setTimeout(() => { status.innerText = ""; }, 2000);
+                urlInput.value = '';
+            } catch (e) { 
+                status.innerText = "Error adding site. Try manual add or check URL."; 
+                console.error(e);
+            } finally {
+                saveBtn.disabled = false;
+            }
         }
 
         async function deleteSite(id, url) {
